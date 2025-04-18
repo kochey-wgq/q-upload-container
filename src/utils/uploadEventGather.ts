@@ -19,6 +19,11 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    options: UploadEventGatherOptions
 
    constructor(options: UploadEventGatherOptions) {
+      if (!Object.prototype.hasOwnProperty.call(options.requestOptions, 'data')) {
+         Reflect.set(options.requestOptions, 'data', {})
+
+      } 
+
       this.options = options;
    }
    httpRequest = async (config: AxiosConfig) => {
@@ -32,7 +37,6 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
     * @param {UploadEventGatherOptions.uploadOptions} parmas - 参数对象
     * @param {UploadEventGatherOptions.uploadOptions.files} parmas.files - 文件资源
     * @param {UploadEventGatherOptions.uploadOptions.num} parmas.num - 文件数量(多文件)
-    * @param {UploadEventGatherOptions.uploadOptions.multiple} parmas.multiple   - 文件数量类型(单文件、多文件)
     * @param {UploadEventGatherOptions.uploadOptions.accept} parmas.accept - 文件类型限制
     * @returns {FormData} - 返回处理后的文件对象
     */
@@ -54,7 +58,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
       }
       //这里需要同步配置文件类型
-      formData.append('multiple', String(this.options.uploadOptions.multiple))
+      //formData.append('multiple', String(this.options.uploadOptions.multiple))
       return formData
    }
    /**
@@ -68,6 +72,13 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       }
       console.log('触发文件选择框', event, files)
       if (!files?.length) return
+
+      //其他上传类型参数配置 
+      Reflect.set(this.options.requestOptions, 'data', {
+         ...this.options.requestOptions.data,
+         accept : event.target.accept.split(',')
+      })
+
 
       this.options.requestOptions.onProgress = ((data) => {
          if (onProgress) onProgress(data)
@@ -91,21 +102,21 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    }
    /**
     * 获取blob资源
-    * @param {AxiosConfig} config 配置项
-    * @param {BlobOptions} blobOptions blob 参数
+    * @param {AxiosConfig} config 配置项 
     * @returns {Promise<Blob>} blob 资源
     */
-   getBlob = async (config: AxiosConfig, blobOptions?: Array<BlobOptions>): Promise<string> => {
-      const [ array, options ] = blobOptions || [];
+   getBlob = async (config: AxiosConfig): Promise<string> => {
       const httpRes = await this.httpRequest({
          ...config,
-         responseType: 'blob',
+         responseType: 'blob'
       });
       const blob = new Blob(
-         (array as BlobPart[]) || [httpRes.data],
-         (options as BlobPropertyBag) || { type: 'image/jpeg' }
+         [httpRes.data],
+         { type: httpRes.data.type }
       );
+
       const imageUrl = URL.createObjectURL(blob);
+
       return imageUrl;
    }
 }

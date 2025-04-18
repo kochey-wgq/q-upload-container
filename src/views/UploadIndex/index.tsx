@@ -26,8 +26,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          if (!response.ok) {
             throw new Error('Network response was not ok');
          }
-         const data = await response.json();
-         console.log('Fetched data:', data);
+         const data = await response.json(); 
          return data
       } catch (error) {
          console.error('Error fetching data:', error);
@@ -38,10 +37,14 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       getList()
    }, []);
    const getList = async () => {
-      let res = await fetchData();
+      const list = await fetchData();
+      const listBlob = list.data.map((t: any) => getResource(t.fileName))
+      Promise.allSettled(listBlob).then((res: any) => {  
+         setImgs(res)
+      })
    }
    const handleFileChange = async (event: any) => {
-      
+
       triggerFileSelect({
          event,
          onProgress: (progress: any) => {
@@ -50,6 +53,9 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          },
          result: (data: any) => {
             console.log(data, '上传result')
+            if(data.httpRes.code === 200){
+               getList()
+            }
             setTimeout(() => {
                sP(0)
             }, 500);
@@ -58,15 +64,12 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    };
 
    const getResource = async (fileName: string): Promise<any> => {
-      const resResource = await getBlob({
+      const blob = await getBlob({
          baseURL: 'http://localhost:3000',
-         url: '/upload',
+         url: `/upload/${fileName}`,
          method: 'get',
-         params: {
-            fileName
-         }
       })
-      return resResource
+      return blob
    }
    return (
       <div className={styles.uploadContainer}>
@@ -108,20 +111,15 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
             onChange={handleFileChange}
          />
          <div className={styles.exampleImages}>
-            <div className={styles.imagePreview}>
-               <img
-                  src="https://via.placeholder.com/150"
-                  alt="示例图片"
-                  className={styles.image}
-               />
-            </div>
-            <div className={styles.imagePreview}>
-               <img
-                  src="https://via.placeholder.com/150"
-                  alt="示例图片"
-                  className={styles.image}
-               />
-            </div>
+            {imgs.map((item, index) => (
+               <div className={styles.imagePreview}  key={index}>
+                  <img 
+                     src={item.value}
+                     alt="示例图片"
+                     className={styles.image}
+                  />
+               </div>
+            ))}
          </div>
       </div>
    );

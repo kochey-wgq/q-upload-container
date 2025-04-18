@@ -1,26 +1,25 @@
-import axios from 'axios'
-
+import axios from 'axios' 
 
 
 //上传进度条
-const httpProgressEvent = async (progressEvent: Record<string, any>, onProgress?: (data:ProgressData) => void) => {
-   const { progress, lengthComputable ,download} = progressEvent
+const httpProgressEvent = async (progressEvent: Record<string, any>, onProgress?: (data: ProgressData) => void) => {
+   const { progress, lengthComputable, download } = progressEvent
    //上传进度条数据
    const progressData: ProgressData = {
       done: false,     // 是否完成
       percentage: 0,   // 进度
-      progressType : 'upload' //进度条类型
+      progressType: 'upload' //进度条类型
    }
    if (lengthComputable) {
       Reflect.set(progressData, 'percentage', Math.round(progress * 100))
       Reflect.set(progressData, 'done', progress >= 1)
       //表明是否为下载事件
-      Reflect.set(progressData, 'progressType',download ? 'download' :'upload')
+      Reflect.set(progressData, 'progressType', download ? 'download' : 'upload')
    } else {
       Object.assign(progressData, {
          error: '资源不可计算',     //不可计算资源
          done: false,
-         percentage: 0 
+         percentage: 0
       })
    }
    Object.assign(progressData, {
@@ -38,14 +37,13 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
    config => {
-      const { 
+      const {
          headers,
          baseURL
-      }: AxiosConfig = config
-      console.log(config, 'http-config')
+      }: AxiosConfig = config 
       // 动态设置 baseURL
       config.baseURL = baseURL; // 可以根据需要动态设置
-      config.headers = headers; 
+      config.headers = headers;
 
       return config
    },
@@ -63,10 +61,18 @@ request.interceptors.response.use(
          businesFailCode = 500
       } = ((response.config as unknown) as AxiosConfig).businesCode || {}
       const res = response.data
-      // 这里根据自己的业务code修改
-      if (res.code === businesSuccCode) {
+
+      // 这里根据自己的业务code修改 
+      if (res instanceof Blob) {
+         const blobData = {
+            code: 200,
+            msg: "获取资源成功",
+            data: res
+         }
+         return blobData
+      } else if (res.code === businesSuccCode) {
          return res
-      } else if (res.code === businesFailCode) {
+      } else if (res.code === businesFailCode) {      //错误code
 
          return Promise.reject(res)
       }
