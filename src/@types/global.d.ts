@@ -5,13 +5,9 @@ declare global {
    type TriggerFileSelectPro = {
       event: EventType,
       onProgress: (parmas: ProgressData) => void,
-      result: (parmas: TriggerFileOptions) => void
+      result: (parmas: AxiosResponse<any, any>[]) => void
    }
-
-   //选择文件后返回的请求参数类型
-   type TriggerFileOptions = {
-      httpRes: Record<string, any>
-   }
+ 
 
    //文件触发器的类型定义
    type EventType = React.ChangeEvent<HTMLInputElement> | Event | any
@@ -36,6 +32,7 @@ declare global {
    }
    //进度条配置
    interface ProgressData {
+      file?:File        // 文件
       error?: string,   // 是否可读取资源
       done: false,      // 是否完成
       percentage: 0,    // 进度

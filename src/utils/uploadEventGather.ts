@@ -80,23 +80,37 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       })
 
 
-      this.options.requestOptions.onProgress = ((data) => {
-         if (onProgress) onProgress(data)
-      })
+      
 
-      const httpRes = await this.httpRequest({
+      const httpRes = async () =>{
+         const arr = (Array.from(files)).map(file =>{
+            this.options.requestOptions.onProgress = ((data) => {
+               if (onProgress) onProgress({
+                  ...data,
+                  file
+               })
+            })
+            return this.httpRequest({
 
-         ...this.options.requestOptions,
-         data: this.handlerFileParmas({
-            ...this.options.uploadOptions,
-            files,
+               ...this.options.requestOptions,
+               data: this.handlerFileParmas({
+                  ...this.options.uploadOptions,
+                  files : (() => {
+                     const dataTransfer = new DataTransfer();
+                     dataTransfer.items.add(file);
+                     return dataTransfer.files;
+                  })(),
+               })
+            })
          })
-      })
+         return await Promise.all(arr) 
+      }
+      const res  = await httpRes()  
       event.target.value = '';
       if (result) {
-         result({ httpRes })
+         result(res)
       } else {
-         return httpRes
+         return res
       }
 
    }

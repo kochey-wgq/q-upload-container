@@ -53,9 +53,9 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          },
          result: (data: any) => {
             console.log(data, '上传result')
-            if(data.httpRes.code === 200){
-               getList()
-            }
+            // if(data.httpRes.code === 200){
+            //    getList()
+            // }
             setTimeout(() => {
                sP(0)
             }, 500);
