@@ -5,14 +5,15 @@ import UploadIndex from '@/views/UploadIndex'
 function App() {
   const uploadParmas = {
     uploadOptions: {
-      accept: ['.png', '.mp4'],
+      accept: ['image/*'],
       num: 1,
       multiple: true,
     },
     requestOptions: {
+      timeout :0,
       baseURL: 'http://localhost:3000',
       url: '/upload',
-      method: 'post',
+      method: 'post', 
     }
   }
   return (

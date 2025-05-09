@@ -6,19 +6,19 @@ const httpProgressEvent = async (progressEvent: Record<string, any>, onProgress?
    const { progress, lengthComputable, download } = progressEvent
    //上传进度条数据
    const progressData: ProgressData = {
-      done: false,     // 是否完成
+      done: 'uploading',     // 是否完成
       percentage: 0,   // 进度
       progressType: 'upload' //进度条类型
    }
    if (lengthComputable) {
       Reflect.set(progressData, 'percentage', Math.round(progress * 100))
-      Reflect.set(progressData, 'done', progress >= 1)
+      Reflect.set(progressData, 'done', progress >= 1 ? 'done' : 'uploading') //是否完成
       //表明是否为下载事件
       Reflect.set(progressData, 'progressType', download ? 'download' : 'upload')
    } else {
       Object.assign(progressData, {
          error: '资源不可计算',     //不可计算资源
-         done: false,
+         done: 'error',
          percentage: 0
       })
    }

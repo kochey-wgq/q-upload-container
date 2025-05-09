@@ -3,14 +3,14 @@ import { AxiosRequestConfig } from 'axios';
 declare global {
    // 选择文件后触发的参数类型
    type TriggerFileSelectPro = {
-      event: EventType,
-      onProgress: (parmas: ProgressData) => void,
+      data: EventType,
+      onProgress: (parmas: Record<string,ProgressData>) => void,
       result: (parmas: AxiosResponse<any, any>[]) => void
    }
  
 
    //文件触发器的类型定义
-   type EventType = React.ChangeEvent<HTMLInputElement> | Event | any
+   type EventType = React.ChangeEvent<HTMLInputElement> | Event | FileList
 
    //文件上传的类型，httpOptions的类型
    interface UploadEventGatherOptions {
@@ -18,7 +18,7 @@ declare global {
          onProgress?: (data: ProgressData) => void,
       } & AxiosRequestConfig,
       uploadOptions: {
-         accept: string[] | string,
+         accept?: string[] | string,
          num: number,
          multiple?: boolean,
       }
@@ -34,7 +34,7 @@ declare global {
    interface ProgressData {
       file?:File        // 文件
       error?: string,   // 是否可读取资源
-      done: false,      // 是否完成
+      done: string,      // 是否完成
       percentage: 0,    // 进度
       progressType: string  // 进度条类型
       axiosOrgProgress?: Record<string, any> // 原始axios进度条事件

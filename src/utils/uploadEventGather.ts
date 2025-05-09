@@ -1,6 +1,7 @@
 import http from '@/api/request.ts'
+import tools from '@/common'
 type handlerFileType = {
-   files: FileList | null,
+   files: FileList | [],
 } & UploadEventGatherOptions['uploadOptions']
 
 
@@ -22,7 +23,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       if (!Object.prototype.hasOwnProperty.call(options.requestOptions, 'data')) {
          Reflect.set(options.requestOptions, 'data', {})
 
-      } 
+      }
 
       this.options = options;
    }
@@ -63,39 +64,74 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    }
    /**
     * @description 触发文件选择框
-    * @param {object} event - 事件对象
+    * @param {Object} params - 参数
+    * @param {TriggerFileSelectPro.event} params.data - 事件对象
+    * @param {TriggerFileSelectPro.onProgress} params.onProgress onProgress - 进度回调函数
+    * @param {TriggerFileSelectPro.result} params.result - API结果回调函数
    */
-   triggerFileSelect = async ({ event, onProgress, result }: TriggerFileSelectPro) => {
-      let files: handlerFileType['files'] = null
-      if ('target' in event) {
-         files = (event.target as HTMLInputElement)?.files
+   triggerFileSelect = async ({ data: event, onProgress, result }: TriggerFileSelectPro) => {
+      let files: handlerFileType['files'] = []
+      const { validateFiles, getFileHash } = tools
+
+
+      // 判断event的类型 (既选既传)
+      if (Object.prototype.toString.call(event) === '[object Object]' && 'target' in event) {
+         files = (event.target as HTMLInputElement)?.files as FileList
+      } else { // 用户主动行为上传
+         files = event as FileList
       }
-      console.log('触发文件选择框', event, files)
+
+      console.log('触发文件选择框', event, files, Array.from(files))
       if (!files?.length) return
+
+
+      const { isValid, invalidFiles } = validateFiles(Array.from(files), this.options.uploadOptions.accept ?? '')
+      //文件校验
+      if (!isValid) {
+         console.error(`只允许上传${this.options.uploadOptions.accept},错误的文件数据：`, invalidFiles)
+         throw Error('上传的文件类型不符合要求')
+      }
 
       //其他上传类型参数配置 
       Reflect.set(this.options.requestOptions, 'data', {
          ...this.options.requestOptions.data,
-         accept : event.target.accept.split(',')
+         accept: typeof this.options.uploadOptions.accept === 'string' ? this.options.uploadOptions.accept.split(',') : ''
       })
 
 
-      
 
-      const httpRes = async () =>{
-         const arr = (Array.from(files)).map(file =>{
-            this.options.requestOptions.onProgress = ((data) => {
-               if (onProgress) onProgress({
-                  ...data,
-                  file
-               })
+
+      const httpRes = async () => {
+         const arr = (Array.from(files)).map(file => {
+            // 以文件名为key的对象，存储文件上传进度
+            const get = async () => {
+               const progressData: Record<string, any> = Array.from(files).reduce(async (pre, cur) => {
+                  console.log(cur, 'cur')
+                  pre[await getFileHash(cur)] = {};
+                  return pre;
+               }, {} as Record<string, any>);
+               return progressData
+            }
+            this.options.requestOptions.onProgress = (async (data) => {
+
+               if (onProgress) {
+                  console.log(await get(), 'progressData')
+                  // progressData[file.name] = {
+                  //    ...data,
+                  //    file
+                  // }
+                  onProgress({
+                     ...data,
+                     file
+                  })
+               }
             })
             return this.httpRequest({
 
                ...this.options.requestOptions,
                data: this.handlerFileParmas({
                   ...this.options.uploadOptions,
-                  files : (() => {
+                  files: (() => {
                      const dataTransfer = new DataTransfer();
                      dataTransfer.items.add(file);
                      return dataTransfer.files;
@@ -103,12 +139,15 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                })
             })
          })
-         return await Promise.all(arr) 
+         return await Promise.all(arr)
       }
-      const res  = await httpRes()  
-      event.target.value = '';
+      const res = await httpRes()
+      // 如果是input事件，清空input的值
+      if (Object.prototype.toString.call(event) === '[object Object]') (event as React.ChangeEvent<HTMLInputElement>).target.value = '';
+
+
       if (result) {
-         result(res)
+         result(res || [])
       } else {
          return res
       }
