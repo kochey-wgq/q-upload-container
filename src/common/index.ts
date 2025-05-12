@@ -4,7 +4,8 @@ type ReturnValidateFiles = { isValid: boolean, invalidFiles: File[] }
 
 interface Tools {
    validateFiles: (files: File[], acceptRules: string | string[]) => ReturnValidateFiles,
-   getFileHash: (file: File) => Promise<string>
+   getFileHash: (file: File) => Promise<string>,
+   getFileProto: (file: File) => object
 }
 
 /**
@@ -106,6 +107,27 @@ const tools: Tools = {
 
          reader.readAsArrayBuffer(file);
       });
+   },
+   /**
+    * 
+    * @param file - 文件对象
+    * @description 过滤文件对象，去除不必要的属性，只保留标准属性
+    * @returns  {File} - 过滤后的文件对象
+    */
+   getFileProto: (file: any): File => {
+ 
+      const standardProps = [
+         'name', 'size', 'type', 'lastModified', 
+         'lastModifiedDate', 'webkitRelativePath'
+       ]
+
+      const filtered = standardProps.reduce<Record<string, any>>((pre, cur) => {
+         if (file[cur] !== undefined) {
+            pre[cur] = file[cur];
+         }
+         return pre;
+      }, {});
+      return filtered as File
    }
 }
 

@@ -18,7 +18,7 @@ const UploadContainer: React.FC<UploadContainerType> = (props): React.ReactNode 
   return children({
     ...options,
     triggerFileSelect,
-    getBlob
+    getBlob, 
   })
 }
 export default UploadContainer

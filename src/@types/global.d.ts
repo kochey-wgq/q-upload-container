@@ -4,7 +4,7 @@ declare global {
    // 选择文件后触发的参数类型
    type TriggerFileSelectPro = {
       data: EventType,
-      onProgress: (parmas: Record<string,ProgressData>) => void,
+      onProgress: (parmas: ProgressData) => void,
       result: (parmas: AxiosResponse<any, any>[]) => void
    }
  
@@ -34,7 +34,7 @@ declare global {
    interface ProgressData {
       file?:File        // 文件
       error?: string,   // 是否可读取资源
-      done: string,      // 是否完成
+      status: string,      // 上传/下载状态
       percentage: 0,    // 进度
       progressType: string  // 进度条类型
       axiosOrgProgress?: Record<string, any> // 原始axios进度条事件

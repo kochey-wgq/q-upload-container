@@ -71,13 +71,13 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    */
    triggerFileSelect = async ({ data: event, onProgress, result }: TriggerFileSelectPro) => {
       let files: handlerFileType['files'] = []
-      const { validateFiles, getFileHash } = tools
+      const { validateFiles, getFileHash, getFileProto } = tools
 
 
-      // 判断event的类型 (既选既传)
+      // 判断event的类型 
       if (Object.prototype.toString.call(event) === '[object Object]' && 'target' in event) {
          files = (event.target as HTMLInputElement)?.files as FileList
-      } else { // 用户主动行为上传
+      } else {
          files = event as FileList
       }
 
@@ -85,7 +85,11 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       if (!files?.length) return
 
 
+
+
       const { isValid, invalidFiles } = validateFiles(Array.from(files), this.options.uploadOptions.accept ?? '')
+
+
       //文件校验
       if (!isValid) {
          console.error(`只允许上传${this.options.uploadOptions.accept},错误的文件数据：`, invalidFiles)
@@ -101,27 +105,19 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
 
 
+
       const httpRes = async () => {
-         const arr = (Array.from(files)).map(file => {
-            // 以文件名为key的对象，存储文件上传进度
-            const get = async () => {
-               const progressData: Record<string, any> = Array.from(files).reduce(async (pre, cur) => {
-                  console.log(cur, 'cur')
-                  pre[await getFileHash(cur)] = {};
-                  return pre;
-               }, {} as Record<string, any>);
-               return progressData
-            }
-            this.options.requestOptions.onProgress = (async (data) => {
+         const arr = (Array.from(files)).map(async file => { 
+            // 计算文件哈希值256方式作为file的唯一标识
+            const key = await getFileHash(file)
+
+
+            this.options.requestOptions.onProgress = (async data => {
 
                if (onProgress) {
-                  console.log(await get(), 'progressData')
-                  // progressData[file.name] = {
-                  //    ...data,
-                  //    file
-                  // }
                   onProgress({
                      ...data,
+                     [key]: getFileProto(file),   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
                      file
                   })
                }
