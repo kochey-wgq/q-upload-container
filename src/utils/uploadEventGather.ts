@@ -65,13 +65,18 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    /**
     * @description 触发文件选择框
     * @param {Object} params - 参数
-    * @param {TriggerFileSelectPro.event} params.data - 事件对象
+    * @param {TriggerFileSelectPro.data} params.data - 事件对象
     * @param {TriggerFileSelectPro.onProgress} params.onProgress onProgress - 进度回调函数
     * @param {TriggerFileSelectPro.result} params.result - API结果回调函数
    */
    triggerFileSelect = async ({ data: event, onProgress, result }: TriggerFileSelectPro) => {
       let files: handlerFileType['files'] = []
-      const { validateFiles, getFileHash, getFileProto } = tools
+      const {
+         validateFiles,
+         getFileHash,
+         getFileProto,
+         createFileChunks
+      } = tools
 
 
       // 判断event的类型 
@@ -81,7 +86,15 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          files = event as FileList
       }
 
-      console.log('触发文件选择框', event, files, Array.from(files))
+      console.log('触发文件选择框', event, Array.from(files), 'files')
+      const CHUNK_SIZE = 1024 * 1024; // 1MB
+
+      // console.log(createFileChunks({
+      //    files,
+      //    CHUNK_SIZE,
+      //    chunkHash: true
+      // }), '分片文件')
+      if (true) return
       if (!files?.length) return
 
 
@@ -107,7 +120,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
 
       const httpRes = async () => {
-         const arr = (Array.from(files)).map(async file => { 
+         const arr = (Array.from(files)).map(async file => {
             // 计算文件哈希值256方式作为file的唯一标识
             const key = await getFileHash(file)
 
@@ -118,7 +131,6 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                   onProgress({
                      ...data,
                      [key]: getFileProto(file),   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
-                     file
                   })
                }
             })

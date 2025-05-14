@@ -21,6 +21,8 @@ declare global {
          accept?: string[] | string,
          num: number,
          multiple?: boolean,
+         webkitdirectory?: string,
+         directory?: string,
       }
    }
 

@@ -1,4 +1,4 @@
-import { use } from 'react';
+
 import styles from './index.module.less';
 import tools from '@/common'
 const UploadComponent: React.FC<any> = (props): React.ReactNode => {
@@ -20,11 +20,11 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const handleFileChange = (e: any) => {
       if (e.target.files.length > 0) {
          addFiles(e.target.files);
-         
-         
+
+
       }
 
-   }; 
+   };
    // 开启既传既更
    // useEffect(() => { 
    //    if(files.length < 0 ) return
@@ -83,7 +83,6 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       }));
 
       setFiles((prev: any) => [...prev, ...newFileList]);
-      
    };
 
    const clearAll = () => {
@@ -202,8 +201,8 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                ref={fileInputRef}
                multiple={uploadOptions?.multiple || false}
                accept={Array.isArray(uploadOptions?.accept) ? uploadOptions?.accept?.join(',') : uploadOptions?.accept}
-               webkitdirectory={false}
-               directory={false}
+               webkitdirectory={uploadOptions?.webkitdirectory}
+               directory={uploadOptions?.directory}
                onChange={handleFileChange}
                style={{ display: 'none' }}
             />
@@ -228,11 +227,14 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                            style={{ width: `${file.progress}%` }}
                         ></div>
                      </div>
-                     <div
-                        className={styles.status}
-                        style={{ color: getStatusColor(file.status) }}
-                     >
-                        {file.status === 'pending' ? '等待上传' : (file.status === 'uploading' ? '上传中...' : '上传完成')}
+                     <div className={styles.hanlder}>
+                        <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`}>开始上传</button> 
+                        <div
+                           className={styles.status}
+                           style={{ color: getStatusColor(file.status) }}
+                        >
+                           {file.status === 'pending' ? '等待上传' : (file.status === 'uploading' ? '上传中...' : '上传完成')}
+                        </div>
                      </div>
                   </div>
                ))
@@ -240,7 +242,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          </div>
 
          <div className={styles.actions}>
-            <button onClick={startUpload} className={`${styles.btn} ${styles.primary}`}>开始上传</button>
+            <button onClick={startUpload} className={`${styles.btn} ${styles.primary}`}>全部上传</button>
             <button onClick={clearAll} className={`${styles.btn} ${styles.secondary}`}>清空列表</button>
          </div>
          <br /><br /><br /><br />
