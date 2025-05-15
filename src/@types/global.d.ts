@@ -30,7 +30,7 @@ declare global {
    interface UploadEventGatherType<T> {
       options: T,
       triggerFileSelect: (parmas: TriggerFileSelectPro) => (Promise | void),
-      getBlob: (config: AxiosConfig) => Promise<string>
+      getResources: (config: AxiosConfig) => Promise<string>
    }
    //进度条配置
    interface ProgressData {

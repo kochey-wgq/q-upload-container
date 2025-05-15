@@ -8,7 +8,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const {
       uploadOptions,
       triggerFileSelect,
-      getBlob
+      getResources
    } = props
    const [files, setFiles] = useState<any>([]);
    const [isDragActive, setIsDragActive] = useState(false);
@@ -178,7 +178,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
 
 
    const getResource = async (fileName: string): Promise<any> => {
-      const blob = await getBlob({
+      const blob = await getResources({
          baseURL: 'http://localhost:3000',
          url: `/upload/${fileName}`,
          method: 'get',

@@ -12,13 +12,13 @@ const UploadContainer: React.FC<UploadContainerType> = (props): React.ReactNode 
   const {
     options,
     triggerFileSelect,
-    getBlob
+    getResources
   } = uploadEventGather
   //视图组件
   return children({
     ...options,
     triggerFileSelect,
-    getBlob, 
+    getResources, 
   })
 }
 export default UploadContainer

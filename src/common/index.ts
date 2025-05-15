@@ -8,7 +8,7 @@ type CreateFileChunksPar = {
    CHUNK_SIZE?: number,
 }
 
-type CreateFileChunksReturn = { index: number, blob: Blob, start: number, end: number }
+
 interface Tools {
    validateFiles: (files: File[], acceptRules: string | string[]) => ReturnValidateFiles,
    getFileHash: (file: File) => Promise<string>,
@@ -147,47 +147,12 @@ const tools: Tools = {
     * @param {CreateFileChunksPar.CHUNK_SIZE} params.CHUNK_SIZE - 切片大小，默认值为 5MB
     * @returns {Array<CreateFileChunksReturn>} - 返回一个包含文件切片的数组
     */
-   createFileChunks: (params: CreateFileChunksPar): CreateFileChunksReturn[] => {
-      const { uploadedChunks = [], CHUNK_SIZE = 5 * 1024 * 1024 } = params;
-      // 处理文件列表(类数组)
-      const files = Array.from(params.files);
-
-
-      const fileChunks = files.map((file: File) => {
-
-         const chunkData: { 
-            chunks:CreateFileChunksReturn[], // 文件切片列表
-            start: number,
-            end: number,
-            chunkIndex: number
-         } = { 
-            chunks : [],
-            start: 0,
-            end: Math.min(CHUNK_SIZE, file.size),
-            chunkIndex: 0,
-         }  
-
-         // 开始文件切片
-         while(chunkData.start < file.size) {
-            // 跳过已上传的分片
-            if(!uploadedChunks.includes(chunkData.chunkIndex)) {
-               chunkData.chunks.push({
-                  index: chunkData.chunkIndex,
-                  start : chunkData.start,
-                  end: chunkData.end, 
-                  blob: file.slice(chunkData.start, chunkData.end),
-               });
-            }
-            //更新切片的起始和结束位置
-            chunkData.start = chunkData.end;
-            chunkData.end = Math.min(chunkData.start + CHUNK_SIZE, file.size);
-            chunkData.chunkIndex++;
-         }
-         return chunkData.chunks
-      })
-      //二维转一维
-      console.log(fileChunks, '切片文件')
-      return fileChunks.flat();
+   createFileChunks: (params: CreateFileChunksPar): CreateFileChunksReturn[] => { 
+      const worker = new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url));
+      worker.postMessage(params);
+      worker.onmessage = (event) => {
+         console.log(event,'主线程接收消息')
+      }
    }
 }
 

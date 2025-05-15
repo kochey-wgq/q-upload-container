@@ -87,13 +87,11 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       }
 
       console.log('触发文件选择框', event, Array.from(files), 'files')
-      const CHUNK_SIZE = 1024 * 1024; // 1MB
-
-      // console.log(createFileChunks({
-      //    files,
-      //    CHUNK_SIZE,
-      //    chunkHash: true
-      // }), '分片文件')
+      createFileChunks({
+         uploadedChunks: [],
+         files,
+         CHUNK_SIZE: 1024 
+      })
       if (true) return
       if (!files?.length) return
 
@@ -166,7 +164,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
     * @param {AxiosConfig} config 配置项 
     * @returns {Promise<Blob>} blob 资源
     */
-   getBlob = async (config: AxiosConfig): Promise<string> => {
+   getResources = async (config: AxiosConfig): Promise<string> => {
       const httpRes = await this.httpRequest({
          ...config,
          responseType: 'blob'
