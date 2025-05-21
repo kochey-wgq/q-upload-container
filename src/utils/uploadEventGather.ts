@@ -88,9 +88,9 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
       console.log('触发文件选择框', event, Array.from(files), 'files')
       createFileChunks({
-         uploadedChunks: [],
          files,
-         CHUNK_SIZE: 1024 
+         chunkSize: 1024 * 1024 * 3,
+         maxUploads: 3, 
       })
       if (true) return
       if (!files?.length) return

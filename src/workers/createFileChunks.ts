@@ -42,8 +42,11 @@ self.onmessage = async ({ data }) => {
       formData.append('chunkIndex', chunk.index)
       formData.append('fileHash', fileHash)
       formData.append('fileName', file.name)
+      formData.append('totalChunks', file.size)
       const httpRes = await http({
-         url: '/api/file/check',
+         timeout :0,
+         baseURL: 'http://localhost:3000',
+         url: '/upload',
          method: 'POST', 
          data: formData,
          signal: controllers[fileHash]?.signal,
@@ -63,7 +66,7 @@ self.onmessage = async ({ data }) => {
 
       // 检查已上传的分片
       const httpRes = await http({
-         url: '/api/file/check',
+         url: '/check',
          method: 'POST',
          headers: {
             'Content-Type': 'application/json',
@@ -88,7 +91,7 @@ self.onmessage = async ({ data }) => {
          // 逐片上传
          const success = await uploadChunk(chunks[i], fileHash, file);
 
-         if(success){
+         if(success.data.code === 200){
             fileInfo.uploadedChunks.push(chunks[i].index)
             const progress = Math.round((fileInfo.uploadedChunks.length / chunks.length) * 100)
          }else{
@@ -98,5 +101,5 @@ self.onmessage = async ({ data }) => {
 
    }
 
-   self.postMessage({ status: 'success', data: chunks });
+   self.postMessage({ status: 'success', data: uploadFile });
 };

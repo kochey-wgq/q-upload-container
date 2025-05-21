@@ -2,19 +2,61 @@ import CryptoJS from 'crypto-js';
 
 type ReturnValidateFiles = { isValid: boolean, invalidFiles: File[] }
 
-type CreateFileChunksPar = {
-   files: FileList | File[],
-   uploadedChunks?: number[],
-   CHUNK_SIZE?: number,
+type LargeFileUpload = {
+   files: FileList | File[], 
+   chunkSize?: number,
 }
 
 
 interface Tools {
+   uploadQueue: any[],
    validateFiles: (files: File[], acceptRules: string | string[]) => ReturnValidateFiles,
    getFileHash: (file: File) => Promise<string>,
    getFileProto: (file: File) => object,
-   createFileChunks: (params: CreateFileChunksPar) => CreateFileChunksReturn[],
+   largeFileUpload: (params: LargeFileUpload) => any
 }
+
+interface RequestConcurrencyType {
+   max: number;
+   current: number;
+   queue: any[];
+   add: (item: any) => void;
+}
+
+
+// 请求并发数
+class RequestConcurrency implements RequestConcurrencyType{
+   max: number;
+   current: number;
+   queue: any[];
+   constructor (max: number) {
+      this.max = max;
+      this.current = 0;
+      this.queue = [];
+   }
+   add(fn:Promise<any>) {
+      return new Promise((resolve, reject) => {
+         this.queue.push({fn, resolve, reject})
+         this._run()
+      })
+   }
+   _run(){
+
+   }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * 工具函数集合
@@ -22,6 +64,7 @@ interface Tools {
  * @description 提供文件类型校验、文件哈希计算的工具
 /** @type {*} */
 const tools: Tools = {
+   uploadQueue: [],
    /**
     * 校验文件类型
     * @param {File[]} files - 文件列表
@@ -147,11 +190,39 @@ const tools: Tools = {
     * @param {CreateFileChunksPar.CHUNK_SIZE} params.CHUNK_SIZE - 切片大小，默认值为 5MB
     * @returns {Array<CreateFileChunksReturn>} - 返回一个包含文件切片的数组
     */
-   createFileChunks: (params: CreateFileChunksPar): CreateFileChunksReturn[] => { 
+   largeFileUpload (params: LargeFileUpload):any { 
       const worker = new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url));
+      const { chunkSize,maxUploads} = params
+      const files = Array.from(params.files).map((file: File) => ({
+         file,
+         progress: 0, // 上传进度初始化为0
+         status: 'pending', // 初始状态为等待上传
+         uploadedChunks: [], // 已上传的分片索引数组
+         fileHash: null // 文件哈希初始为null，稍后计算
+      }))
+
+      // 上传队列
+      const processUploadQueue  = () => {
+
+
+      }
+      // 开始上传
+      const startUpload = () =>{
+         const queue = files.map((file) => {
+            if(file.status === 'pending' || file.status === 'paused'){
+               if(!file.fileHash) Reflect.set(file, 'fileHash', this.getFileHash(file.file))
+            }
+         })
+
+         for(let i = 0; i < Math.min(queue.length, maxUploads); i++){
+            processUploadQueue()
+         }
+      }
+ 
       worker.postMessage(params);
-      worker.onmessage = (event) => {
-         console.log(event,'主线程接收消息')
+      worker.onmessage = ({data}) => {
+         console.log(data,'主线程接收消息')
+         
       }
    }
 }
