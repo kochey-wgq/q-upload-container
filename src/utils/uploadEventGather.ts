@@ -75,7 +75,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          validateFiles,
          getFileHash,
          getFileProto,
-         createFileChunks
+         largeFileUpload
       } = tools
 
 
@@ -87,10 +87,11 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       }
 
       console.log('触发文件选择框', event, Array.from(files), 'files')
-      createFileChunks({
+      largeFileUpload({
          files,
          chunkSize: 1024 * 1024 * 3,
          maxUploads: 3, 
+         baseURL: this.options.requestOptions.baseURL,
       })
       if (true) return
       if (!files?.length) return
