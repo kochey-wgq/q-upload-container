@@ -91,7 +91,8 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          files,
          chunkSize: 1024 * 1024 * 3,
          maxUploads: 3, 
-         baseURL: this.options.requestOptions.baseURL,
+         baseURL: this.options.requestOptions.baseURL as string ,
+         timeout: this.options.requestOptions.timeout,
       })
       if (true) return
       if (!files?.length) return

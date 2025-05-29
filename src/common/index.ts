@@ -7,6 +7,7 @@ type LargeFileUpload = {
    chunkSize?: number,
    maxUploads?: number, // 限制并发上传的最大数量
    baseURL: string, // 基础URL
+   timeout?: number,
 }
 
 type LargeFileItem = {
@@ -89,6 +90,7 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
    readonly maxUploads: LargeFileUpload['maxUploads'] = 3; // 默认最大并发上传数为3
    readonly files: LargeFileUpload['files'] = []; // 初始化为空数组
    readonly baseURL: LargeFileUpload['baseURL'] = ''; // 基础URL初始化为空字符串
+   readonly timeout: LargeFileUpload['timeout'] = 0; // 请求超时时间，默认不超时
 
    constructor( parmas:LargeFileUpload) { 
       const { files, chunkSize, maxUploads } = parmas;
@@ -97,20 +99,20 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
       this.chunkSize = chunkSize || this.chunkSize;
       this.maxUploads = maxUploads || this.maxUploads;
       this.baseURL = parmas.baseURL; // 设置基础URL
-      
+      this.timeout = parmas.timeout; // 设置基础URL
    }
    //分片上传
    async uploadChunk (chunk: { blob: Blob, index: number,start: number,end: number }, fileHash: string, file: File): Promise<any> {
       const formData = new FormData()
       formData.append('chunk', chunk.blob)
-      formData.append('chunk-index', chunk.index.toString())
-      formData.append('file-hash', fileHash)
-      formData.append('file-name', file.name)
-      formData.append('total-chunks', file.size.toString())
-      formData.append('file-type', file.type)
-      const httpRes = await http({
-         timeout :0,
+      formData.append('chunkIndex', chunk.index.toString())
+      formData.append('fileHash', fileHash)
+      formData.append('fileName', file.name)
+      formData.append('totalChunks', file.size.toString())
+      formData.append('fileType', file.type)
+      const httpRes = await http({ 
          baseURL: this.baseURL,
+         timeout :this.timeout,
          url: '/upload',
          method: 'POST', 
          data: formData,
@@ -148,6 +150,7 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
       // 检查已上传的分片
       const httpRes = await http({
          baseURL: this.baseURL,
+         timeout :this.timeout,
          url: '/check',
          method: 'POST',
          headers: {
@@ -164,23 +167,24 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
       this.controllers[fileHash] = controller;
 
       //开始上传当前文件逐片上传
-      for  (let i = 0; i < chunks.length; i++) {
+      const success = chunks.map(async chunks =>{
          //如果当前文件处于暂停状态，则跳过当前文件
          if(fileInfo.status === 'paused'){
             controller.abort()
-            break
+            return Promise.reject(new Error("上传已暂停"))
          }
          // 逐片上传
-         const success = await this.uploadChunk(chunks[i], fileHash, file);
-         return success
-         // if(success.data.code === 200){
-         //    fileInfo.uploadedChunks.push(chunks[i].index)
-         //    const progress = Math.round((fileInfo.uploadedChunks.length / chunks.length) * 100)
-         // }else{
-         //    return
-         // }
-      }
-
+         const resChunks = await this.uploadChunk(chunks, fileHash, file);
+         return resChunks
+      })
+      
+      return Promise.all(success)
+      // if(success.data.code === 200){
+      //    fileInfo.uploadedChunks.push(chunks[i].index)
+      //    const progress = Math.round((fileInfo.uploadedChunks.length / chunks.length) * 100)
+      // }else{
+      //    return
+      // }
    }
 
    // 开始上传
