@@ -102,7 +102,7 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
       this.timeout = parmas.timeout; // 设置基础URL
    }
    //分片上传
-   async uploadChunk (chunk: { blob: Blob, index: number,start: number,end: number }, fileHash: string, file: File): Promise<any> {
+   async uploadChunk (chunk: { blob: Blob, index: number,start: number,end: number }, fileHash: string, file: File,totalChunksNum:number): Promise<any> {
       const formData = new FormData()
       formData.append('chunk', chunk.blob)
       formData.append('chunkIndex', chunk.index.toString())
@@ -110,6 +110,7 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
       formData.append('fileName', file.name)
       formData.append('totalChunks', file.size.toString())
       formData.append('fileType', file.type)
+      formData.append('totalChunksNum', totalChunksNum.toString())
       const httpRes = await http({ 
          baseURL: this.baseURL,
          timeout :this.timeout,
@@ -174,7 +175,7 @@ class LargeFile extends RequestConcurrency implements LargeFileType {
             return Promise.reject(new Error("上传已暂停"))
          }
          // 逐片上传
-         const resChunks = await this.uploadChunk(chunks, fileHash, file);
+         const resChunks = await this.uploadChunk(chunks, fileHash, file,totalChunksNum);
          return resChunks
       })
       
