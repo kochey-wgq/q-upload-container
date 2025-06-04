@@ -87,20 +87,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       }
 
       console.log('触发文件选择框', event, Array.from(files), 'files')
-      largeFileUpload({
-         files,
-         chunkSize: 1024 * 1024,
-         maxFileUploads: 3, 
-         maxFileChunksUploads: 3, 
-         baseURL: this.options.requestOptions.baseURL as string ,
-         timeout: this.options.requestOptions.timeout,
-         onProgress(resChunks) {
-            console.log(resChunks.data, '分片上传成功');
-         }
-      }).then((res: any) => {
-         console.log('上传完成所有分片', res)
-      })
-      if (true) return
+      
       if (!files?.length) return
 
 
@@ -122,7 +109,20 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       })
 
 
-
+      largeFileUpload({
+         files,
+         chunkSize: 1024 * 1024,
+         maxFileUploads: 3, 
+         maxFileChunksUploads: 3, 
+         baseURL: this.options.requestOptions.baseURL as string ,
+         timeout: this.options.requestOptions.timeout,
+         onProgress(resChunks) {
+            console.log(resChunks.data, '分片上传成功');
+         }
+      }).then((res: any) => {
+         console.log('上传完成所有分片', res)
+      })
+      if (true) return
 
 
       const httpRes = async () => {

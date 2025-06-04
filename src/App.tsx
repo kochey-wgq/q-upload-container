@@ -5,7 +5,7 @@ import UploadIndex from '@/views/UploadIndex'
 function App() {
   const uploadParmas = {
     uploadOptions: {
-      accept: ['image/*'],
+      accept: ['video/*'],
       num: 1,
       multiple: true, 
     },
