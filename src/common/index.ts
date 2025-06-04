@@ -2,12 +2,20 @@ import CryptoJS from 'crypto-js';
 import http from '@/api/request.ts'
 type ReturnValidateFiles = { isValid: boolean, invalidFiles: File[] }
 
+type ResponseChunks = responseType<{
+   chunkSize :number;
+   index: number;
+   totalChunksSize: number;
+}>
+
 type LargeFileUpload = {
    files: FileList | File[], 
    chunkSize?: number,
-   maxUploads?: number, // 限制并发上传的最大数量
+   maxFileUploads?: number, // 限制文件并发上传的最大数量
+   maxFileChunksUploads?: number, // 限制每个文件分片上传的最大数量
    baseURL: string, // 基础URL
    timeout?: number,
+   onProgress?: (params: ResponseChunks) => void, // 上传chunk的进度回调函数
 }
 
 type LargeFileItem = {
@@ -31,15 +39,17 @@ interface RequestConcurrencyType {
    max: number;
    current: number;
    queue: any[];
-   add: (fn: Promise<any>, fileInfo: Record<string, any>) => Promise<unknown>;
+   add: (fn: Promise<any>) => Promise<unknown>;
    _run: (fileInfo: Record<string, any>) => void;
 }
 
 
 interface LargeFileType {  
-   uploadChunk: (chunk: { blob: Blob, index: number,start: number,end: number }, fileHash: string, file: File) => Promise<any>;
+   uploadChunk: (chunk: { blob: Blob, index: number,start: number,end: number }, fileHash: string, file: File,totalChunksNum:number) => Promise<any>;
    craeteChunk: (file:File,uploadedChunks:never[],chunkSize:string | number) => Promise<any[]>;
    uploadFile: (fileInfo: LargeFileItem) => Promise<any>;
+   getUploadedChunks: (fileHash: string) => Promise<any>;
+   startUpload: () => Promise<any>;
 }
 
 /**
@@ -64,8 +74,7 @@ class RequestConcurrency implements RequestConcurrencyType {
          this._run();
       });
    }
-   _run() {
-      
+   _run() { 
       while (this.current < this.max && this.queue.length) {
          const { fn, resolve, reject } = this.queue.shift();  
          this.current++;
@@ -82,138 +91,168 @@ class RequestConcurrency implements RequestConcurrencyType {
 
 
 
-class LargeFile extends RequestConcurrency implements LargeFileType {
-   private chunkWorker  : Worker = new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url));
-   private uploadQueue : LargeFileItem[] = [];  // 上传队列
-   private controllers  : Record<string, AbortController> = {};
+/**
+ * 大文件上传类
+ * @implements LargeFileType
+ * @description 提供大文件分片上传功能
+ */
+class LargeFile implements LargeFileType {
+   private chunkWorker: Worker = new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url));  //创建文件切片的worker
+   private uploadQueue: LargeFileItem[] = []; // 上传队列
+   private controllers: Record<string, AbortController> = {};
    readonly chunkSize: LargeFileUpload['chunkSize'] = 1024 * 1024 * 3; // 默认分片大小为3MB
-   readonly maxUploads: LargeFileUpload['maxUploads'] = 3; // 默认最大并发上传数为3
+   readonly maxFileUploads: LargeFileUpload['maxFileUploads'] = 3; // 默认文件最大并发上传数为3
+   readonly maxFileChunksUploads : LargeFileUpload['maxFileChunksUploads'] = 3; // 限制每个文件分片上传的最大数量
    readonly files: LargeFileUpload['files'] = []; // 初始化为空数组
    readonly baseURL: LargeFileUpload['baseURL'] = ''; // 基础URL初始化为空字符串
    readonly timeout: LargeFileUpload['timeout'] = 0; // 请求超时时间，默认不超时
-
-   constructor( parmas:LargeFileUpload) { 
-      const { files, chunkSize, maxUploads } = parmas;
-      super(maxUploads as number);
-      this.files = files
+   onProgress: LargeFileUpload['onProgress']; // 上传chunk的进度回调函数
+   private concurrentFile: RequestConcurrencyType = new RequestConcurrency(this.maxFileUploads as number); //文件的并发
+   private concurrentFileChunks : RequestConcurrencyType = new RequestConcurrency(this.maxFileChunksUploads as number); //文件分片的并发
+   /**
+    * 构造函数
+    * @param {LargeFileUpload} params - 大文件上传参数
+    */
+   constructor(params: LargeFileUpload) {
+      const { files, chunkSize, maxFileUploads,maxFileChunksUploads } = params; 
+      this.files = files;
       this.chunkSize = chunkSize || this.chunkSize;
-      this.maxUploads = maxUploads || this.maxUploads;
-      this.baseURL = parmas.baseURL; // 设置基础URL
-      this.timeout = parmas.timeout; // 设置基础URL
+      this.maxFileUploads = maxFileUploads || this.maxFileUploads;
+      this.maxFileChunksUploads = maxFileChunksUploads || this.maxFileChunksUploads;
+      this.baseURL = params.baseURL; // 设置基础URL
+      this.timeout = params.timeout; // 设置超时时间 
+      this.onProgress = params.onProgress || (() => {}); // 设置上传chunk的进度回调函数，默认不执行任何操作
    }
-   //分片上传
-   async uploadChunk (chunk: { blob: Blob, index: number,start: number,end: number }, fileHash: string, file: File,totalChunksNum:number): Promise<any> {
-      const formData = new FormData()
-      formData.append('chunk', chunk.blob)
-      formData.append('chunkIndex', chunk.index.toString())
-      formData.append('fileHash', fileHash)
-      formData.append('fileName', file.name)
-      formData.append('totalChunks', file.size.toString())
-      formData.append('fileType', file.type)
-      formData.append('totalChunksNum', totalChunksNum.toString())
-      const httpRes = await http({ 
+
+   /**
+    * 分片上传
+    * @param {Object} chunk - 分片信息
+    * @param {Blob} chunk.blob - 分片数据
+    * @param {number} chunk.index - 分片索引
+    * @param {number} chunk.start - 分片起始位置
+    * @param {number} chunk.end - 分片结束位置
+    * @param {string} fileHash - 文件哈希值
+    * @param {File} file - 文件对象
+    * @param {number} totalChunksNum - 分片总数
+    * @returns {Promise<any>} - 上传结果
+    */
+   async uploadChunk(chunk: { blob: Blob, index: number, start: number, end: number }, fileHash: string, file: File, totalChunksNum: number): Promise<any> {
+      const formData = new FormData();
+      formData.append('chunk', chunk.blob);
+      formData.append('chunkIndex', chunk.index.toString());
+      formData.append('fileHash', fileHash);
+      formData.append('fileName', file.name);
+      formData.append('totalChunksSize', file.size.toString());
+      formData.append('fileType', file.type);
+      formData.append('totalChunksNum', totalChunksNum.toString());
+      const httpRes = await http({
          baseURL: this.baseURL,
-         timeout :this.timeout,
+         timeout: this.timeout,
          url: '/upload',
-         method: 'POST', 
+         method: 'POST',
          data: formData,
          signal: this.controllers[fileHash]?.signal,
       }); 
-
-      return httpRes
+      return httpRes;
    }
-   //分片创建
-   craeteChunk(file:File,uploadedChunks:never[],chunkSize:string | number):Promise<any[]>{
-      return new Promise((resolve,reject) => {
+
+   /**
+    * 创建分片
+    * @param {File} file - 文件对象
+    * @param {never[]} uploadedChunks - 已上传的分片索引数组
+    * @param {string | number} chunkSize - 分片大小
+    * @returns {Promise<any[]>} - 分片数组
+    */
+   craeteChunk(file: File, uploadedChunks: never[], chunkSize: string | number): Promise<any[]> {
+      return new Promise((resolve, reject) => {
          this.chunkWorker.postMessage({
             file,
             uploadedChunks,
             chunkSize
          });
-         this.chunkWorker.onmessage = ({data}) => {
-            console.log(data,'主线程接收消息') 
-            resolve(data.data)
-         }
-         this.chunkWorker.onerror = () => reject([])
-      })
+         this.chunkWorker.onmessage = ({ data }) => {
+            console.log(data, '主线程接收消息');
+            resolve(data.data);
+         };
+         this.chunkWorker.onerror = () => reject([]);
+      });
    }
-   // 文件上传
-   async uploadFile(fileInfo:LargeFileItem) {
-      // 获取文件信息
-      const { file, fileHash } = fileInfo
-      console.log('开始上传文件:', fileInfo);
-      
-      // 获取文件分块
-      const chunks = await this.craeteChunk(file, fileInfo.uploadedChunks, this.chunkSize as number);
-      // 获取文件分块总数量
-      const totalChunksNum = Math.ceil(file.size / (this.chunkSize as number));
 
-      // 检查已上传的分片
+   /**
+    * 获取已上传的分片
+    * @param {string} fileHash - 文件哈希值
+    * @returns {Promise<any>} - 已上传分片信息
+    */
+   async getUploadedChunks(fileHash: string): Promise<any> {
       const httpRes = await http({
          baseURL: this.baseURL,
-         timeout :this.timeout,
+         timeout: this.timeout,
          url: '/check',
          method: 'POST',
          headers: {
             'Content-Type': 'application/json',
          },
          data: JSON.stringify({ fileHash }),
-      }); 
-      if(httpRes.data === 200){
-         fileInfo.uploadedChunks = httpRes.data.uploadedChunks || [];
-      }
-
-      // 分片API控制器
-      const controller  = new AbortController();
-      this.controllers[fileHash] = controller;
-
-      //开始上传当前文件逐片上传
-      const success = chunks.map(async chunks =>{
-         //如果当前文件处于暂停状态，则跳过当前文件
-         if(fileInfo.status === 'paused'){
-            controller.abort()
-            return Promise.reject(new Error("上传已暂停"))
-         }
-         // 逐片上传
-         const resChunks = await this.uploadChunk(chunks, fileHash, file,totalChunksNum);
-         return resChunks
-      })
-      
-      return Promise.all(success)
-      // if(success.data.code === 200){
-      //    fileInfo.uploadedChunks.push(chunks[i].index)
-      //    const progress = Math.round((fileInfo.uploadedChunks.length / chunks.length) * 100)
-      // }else{
-      //    return
-      // }
+      });
+      return httpRes;
    }
 
-   // 开始上传
-   async startUpload(){ 
-      const files:LargeFileItem[] = Array.from(this.files).map((file: File) => ({
-         file,
-         progress: 0, // 上传进度初始化为0
-         status: 'pending', // 初始状态为等待上传
-         uploadedChunks: [], // 已上传的分片索引数组
-         fileHash: '' // 文件哈希初始为null，稍后计算
-      })) 
+   /**
+    * 上传文件
+    * @param {LargeFileItem} fileInfo - 文件信息
+    * @param {Function} onProgress - 上传chunk的进度回调函数
+    * @returns {Promise<any>} - 上传结果
+    */
+   async uploadFile(fileInfo: LargeFileItem): Promise<any> {
+      const { file, fileHash } = fileInfo;
+      console.log('开始上传文件:', fileInfo);
 
-      // 准备上传队列，只包含待上传或暂停的文件
+      const alreadyChunks = await this.getUploadedChunks(fileHash);
+      console.log('已上传的分片:', alreadyChunks);
+      if (alreadyChunks.code === 200) fileInfo.uploadedChunks = alreadyChunks.data?.uploadedChunks || [];
+
+      const chunks = await this.craeteChunk(file, fileInfo.uploadedChunks, this.chunkSize as number);
+      const totalChunksNum = Math.ceil(file.size / (this.chunkSize as number));
+
+      const controller = new AbortController();
+      this.controllers[fileHash] = controller;
+
+      const chunksRes = chunks.map(async chunk => {
+         if (fileInfo.status === 'paused') {
+            controller.abort();
+            return Promise.reject(new Error("上传已暂停"));
+         } 
+         const resChunks = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks 
+         // console.log(resChunks.data.index, '分片上传成功');
+         if(this.onProgress) this.onProgress(resChunks)  //更新进度条回调
+         return resChunks;
+      }); 
+      return Promise.all(chunksRes);
+   }
+
+   /**
+    * 开始上传
+    * @param {Function} onProgress - 上传chunk的进度回调函数
+    * @returns {Promise<any>} - 上传结果
+    */
+   async startUpload(): Promise<any> {
+      const files: LargeFileItem[] = Array.from(this.files).map((file: File) => ({
+         file,
+         progress: 0,
+         status: 'pending',
+         uploadedChunks: [],
+         fileHash: ''
+      }));
+
       const queue = await Promise.all(files.map(async (file) => {
-         if(file.status === 'pending' || file.status === 'paused'){
-            if(!file.fileHash) Reflect.set(file, 'fileHash',await tools.getFileHash(file.file)) 
+         if (file.status === 'pending' || file.status === 'paused') {
+            if (!file.fileHash) Reflect.set(file, 'fileHash', await tools.getFileHash(file.file));
          }
-         return file
-      }))
+         return file;
+      }));
 
       console.log('开始上传文件队列:', queue);
-      // if(true) return
-      for(let i = 0; i < queue.length; i++){
-         // 调用父类并发实例的add方法
-         super.add(this.uploadFile(queue[i])).then((res) => {
-            console.log(res,'上传成功')
-         })
-      }
+      return Promise.all(queue.map(async (qu) => this.concurrentFileChunks.add(this.uploadFile(qu)))); 
    }
 }
 
@@ -360,7 +399,7 @@ const tools: Tools = {
     */
    largeFileUpload (params: LargeFileUpload):any {  
       const largeFile = new LargeFile(params);
-      largeFile.startUpload()
+      return largeFile.startUpload()   // chunk的result
      
    }
 }

@@ -7,7 +7,13 @@ declare global {
       onProgress: (parmas: ProgressData) => void,
       result: (parmas: AxiosResponse<any, any>[]) => void
    }
- 
+   
+   //http响应返回
+   type responseType<T> = {
+      code : number;
+      msg: string;
+      data: T;
+   }
 
    //文件触发器的类型定义
    type EventType = React.ChangeEvent<HTMLInputElement> | Event | FileList
