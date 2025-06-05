@@ -37,7 +37,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
     * 处理files文件(文件数量类型、文件类型限制、文件大小等)参数
     * @param {UploadEventGatherOptions.uploadOptions} parmas - 参数对象
     * @param {UploadEventGatherOptions.uploadOptions.files} parmas.files - 文件资源
-    * @param {UploadEventGatherOptions.uploadOptions.num} parmas.num - 文件数量(多文件)
+    * @param {UploadEventGatherOptions.uploadOptions.multipleNum} parmas.multipleNum - 文件数量(多文件)
     * @param {UploadEventGatherOptions.uploadOptions.accept} parmas.accept - 文件类型限制
     * @returns {FormData} - 返回处理后的文件对象
     */
@@ -72,10 +72,10 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    triggerFileSelect = async ({ data: event, onProgress, result }: TriggerFileSelectPro) => {
       let files: handlerFileType['files'] = []
       const {
-         validateFiles,
-         getFileHash,
-         getFileProto,
-         largeFileUpload
+         validateFiles,    //校验文件类型
+         getFileHash,      //获取文件哈希值
+         getFileProto,     //获取文件原型key
+         largeFileUpload   //大文件上传
       } = tools
 
 
@@ -92,79 +92,84 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
 
 
+      const {chunkSize, maxFileUploads, maxFileChunksUploads,accept,multipleNum,multiple} = this.options.uploadOptions
+      const { isValid, invalidFiles } = validateFiles(Array.from(files), accept ?? '')
 
-      const { isValid, invalidFiles } = validateFiles(Array.from(files), this.options.uploadOptions.accept ?? '')
-
+      //多文件校验数量
+      if (multiple && multipleNum && files.length > multipleNum) {
+         console.error(`上传的文件数量超过限制，最大允许上传${multipleNum}个文件`)
+         throw Error('上传的文件数量不符合要求')
+      }
 
       //文件校验
       if (!isValid) {
-         console.error(`只允许上传${this.options.uploadOptions.accept},错误的文件数据：`, invalidFiles)
+         console.error(`只允许上传${accept},错误的文件数据：`, invalidFiles)
          throw Error('上传的文件类型不符合要求')
       }
 
       //其他上传类型参数配置 
       Reflect.set(this.options.requestOptions, 'data', {
          ...this.options.requestOptions.data,
-         accept: typeof this.options.uploadOptions.accept === 'string' ? this.options.uploadOptions.accept.split(',') : ''
-      })
-
-
-      largeFileUpload({
-         files,
-         chunkSize: 1024 * 1024,
-         maxFileUploads: 3, 
-         maxFileChunksUploads: 3, 
-         baseURL: this.options.requestOptions.baseURL as string ,
-         timeout: this.options.requestOptions.timeout,
-         onProgress(resChunks) {
-            console.log(resChunks.data, '分片上传成功');
-         }
-      }).then((res: any) => {
-         console.log('上传完成所有分片', res)
-      })
-      if (true) return
-
-
-      const httpRes = async () => {
-         const arr = (Array.from(files)).map(async file => {
-            // 计算文件哈希值256方式作为file的唯一标识
-            const key = await getFileHash(file)
-
-
-            this.options.requestOptions.onProgress = (async data => {
-
-               if (onProgress) {
-                  onProgress({
-                     ...data,
-                     [key]: getFileProto(file),   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
+         accept: typeof accept === 'string' ? accept.split(',') : ''
+      }) 
+ 
+      let httpRes = null
+      if(this.options.toggleLargefile) {  //开启大文件上传
+         const largefileRes = largeFileUpload({
+            files,
+            chunkSize,
+            maxFileUploads, 
+            maxFileChunksUploads, 
+            baseURL: this.options.requestOptions.baseURL as string ,
+            timeout: this.options.requestOptions.timeout,
+            onProgress(resChunks) {
+               console.log(resChunks, '分片上传成功');
+            }
+         })
+         httpRes = await largefileRes
+         console.log('上传完成所有分片', httpRes) 
+      } else{  //小文件上传 则利用axios 的progress
+         const smallFileRes = async () => {
+            const arr = (Array.from(files)).map(async file => {
+               // 计算文件哈希值256方式作为file的唯一标识
+               const key = await getFileHash(file)
+   
+   
+               this.options.requestOptions.onProgress = (async data => {
+   
+                  if (onProgress) {
+                     onProgress({
+                        ...data,
+                        [key]: getFileProto(file),   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
+                     })
+                  }
+               })
+               return this.httpRequest({
+   
+                  ...this.options.requestOptions,
+                  data: this.handlerFileParmas({
+                     ...this.options.uploadOptions,
+                     files: (() => {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        return dataTransfer.files;
+                     })(),
                   })
-               }
-            })
-            return this.httpRequest({
-
-               ...this.options.requestOptions,
-               data: this.handlerFileParmas({
-                  ...this.options.uploadOptions,
-                  files: (() => {
-                     const dataTransfer = new DataTransfer();
-                     dataTransfer.items.add(file);
-                     return dataTransfer.files;
-                  })(),
                })
             })
-         })
-         return await Promise.all(arr)
+            return await Promise.all(arr)
+         }
+         httpRes = await smallFileRes()
       }
-      const res = await httpRes()
-      // 如果是input事件，清空input的值
-      if (Object.prototype.toString.call(event) === '[object Object]') (event as React.ChangeEvent<HTMLInputElement>).target.value = '';
-
 
       if (result) {
-         result(res || [])
+         result(httpRes || [])
       } else {
-         return res
+         return httpRes
       }
+
+      // 如果是input事件，清空input的值
+      if (Object.prototype.toString.call(event) === '[object Object]') (event as React.ChangeEvent<HTMLInputElement>).target.value = '';
 
    }
    /**

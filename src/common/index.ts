@@ -2,11 +2,15 @@ import CryptoJS from 'crypto-js';
 import http from '@/api/request.ts'
 type ReturnValidateFiles = { isValid: boolean, invalidFiles: File[] }
 
-type ResponseChunks = responseType<{
-   chunkSize :number;
-   index: number;
-   totalChunksSize: number;
-}>
+type ResponseChunks = {
+   apiRes : responseType<{
+      chunkSize :number;
+      index: number;
+      totalChunksSize: number;
+   }>,
+   fileInfo : LargeFileItem,
+   // files: FileList | File[], 
+}
 
 type LargeFileUpload = {
    files: FileList | File[], 
@@ -105,7 +109,7 @@ class LargeFile implements LargeFileType {
    readonly maxFileChunksUploads : LargeFileUpload['maxFileChunksUploads'] = 3; // 限制每个文件分片上传的最大数量
    readonly files: LargeFileUpload['files'] = []; // 初始化为空数组
    readonly baseURL: LargeFileUpload['baseURL'] = ''; // 基础URL初始化为空字符串
-   readonly timeout: LargeFileUpload['timeout'] = 0; // 请求超时时间，默认不超时
+   readonly timeout: LargeFileUpload['timeout'] = 0; // 请求超时时间，默认不超时 
    onProgress: LargeFileUpload['onProgress']; // 上传chunk的进度回调函数
    private concurrentFile: RequestConcurrencyType = new RequestConcurrency(this.maxFileUploads as number); //文件的并发
    private concurrentFileChunks : RequestConcurrencyType = new RequestConcurrency(this.maxFileChunksUploads as number); //文件分片的并发
@@ -200,16 +204,16 @@ class LargeFile implements LargeFileType {
    /**
     * 上传文件
     * @param {LargeFileItem} fileInfo - 文件信息
-    * @param {Function} onProgress - 上传chunk的进度回调函数
     * @returns {Promise<any>} - 上传结果
     */
    async uploadFile(fileInfo: LargeFileItem): Promise<any> {
       const { file, fileHash } = fileInfo;
       console.log('开始上传文件:', fileInfo);
-
+      Reflect.set(fileInfo,'status','uploading'); // 更新文件状态为已完成
+      // 查询一次已上传的分片
       const alreadyChunks = await this.getUploadedChunks(fileHash);
       console.log('已上传的分片:', alreadyChunks);
-      if (alreadyChunks.code === 200) fileInfo.uploadedChunks = alreadyChunks.data?.uploadedChunks || [];
+      if (alreadyChunks.code === 200) Reflect.set(fileInfo,'uploadedChunks',alreadyChunks.data?.uploadedChunks || []); // 更新已上传的分片索引
 
       const chunks = await this.craeteChunk(file, fileInfo.uploadedChunks, this.chunkSize as number);
       const totalChunksNum = Math.ceil(file.size / (this.chunkSize as number));
@@ -222,17 +226,32 @@ class LargeFile implements LargeFileType {
             controller.abort();
             return Promise.reject(new Error("上传已暂停"));
          } 
-         const resChunks = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks 
+         const resChunks = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks['apiRes'] 
          // console.log(resChunks.data.index, '分片上传成功');
-         if(this.onProgress) this.onProgress(resChunks)  //更新进度条回调
+
+         // 查询第二次已上传的分片方便progress
+         const actionsChunks = await this.getUploadedChunks(fileHash);
+         // console.log('第二次查询已上传的分片:', actionsChunks.data?.uploadedChunks.length / totalChunksNum);
+
+
+         Reflect.set(fileInfo,'uploadedChunks',actionsChunks.data?.uploadedChunks || []);
+         Reflect.set(fileInfo,'progress',Math.round((actionsChunks.data?.uploadedChunks.length / totalChunksNum) * 100)); // 更新文件上传进度
+         if(actionsChunks.data?.uploadedChunks.length === totalChunksNum) {
+            Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
+
+         }
+         if(this.onProgress) this.onProgress({
+            apiRes : resChunks,  // 分片上传结果
+            fileInfo,            // 文件信息
+            // files : this.files     // 所有文件 
+         })  //更新进度条回调
          return resChunks;
       }); 
       return Promise.all(chunksRes);
    }
 
    /**
-    * 开始上传
-    * @param {Function} onProgress - 上传chunk的进度回调函数
+    * 开始上传 
     * @returns {Promise<any>} - 上传结果
     */
    async startUpload(): Promise<any> {

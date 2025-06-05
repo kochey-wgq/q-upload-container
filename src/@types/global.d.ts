@@ -24,12 +24,16 @@ declare global {
          onProgress?: (data: ProgressData) => void,
       } & AxiosRequestConfig,
       uploadOptions: {
-         accept?: string[] | string,
-         num: number,
-         multiple?: boolean,
-         webkitdirectory?: string,
-         directory?: string,
+         accept?: string[] | string,   // 文件类型限制
+         multipleNum?: number,   //文件数量(多文件)
+         multiple?: boolean,  // 是否支持多文件上传
+         webkitdirectory?: string,  // 是否支持webkit目录上传
+         directory?: string,  // 是否支持目录上传
+         chunkSize?: number, // 分片大小
+         maxFileUploads?: number, // 最大文件上传数量
+         maxFileChunksUploads?: number, // 最大分片上传数量
       }
+      toggleLargefile?: boolean, // 是否开启大文件上传
    }
 
    //事件类型
