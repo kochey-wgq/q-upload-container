@@ -20,7 +20,13 @@ declare global {
 
    //文件上传的类型，httpOptions的类型
    interface UploadEventGatherOptions {
-      requestOptions: {
+      requestOptions: { 
+         largeUrl?:{    // 大文件上传地址
+            timeout?: number, // 超时时间
+            upload: AxiosRequestConfig,   // 大文件上传地址
+            check?: AxiosRequestConfig, // 大文件分片的查询地址
+            merge?: AxiosRequestConfig, // 大文件分片的合并地址
+         }, 
          onProgress?: (data: ProgressData) => void,
       } & AxiosRequestConfig,
       uploadOptions: {

@@ -4,20 +4,31 @@ import UploadContainer from '@/components/UploadContainer'
 import UploadIndex from '@/views/UploadIndex'
 function App() {
   const uploadParmas = {
-    toggleLargefile : false, // 是否开启大文件上传
+    toggleLargefile : true, // 是否开启大文件上传
     uploadOptions: {
       accept: ['video/*'],
-      multipleNum: 1,
+      multipleNum: 2,
       multiple: true, 
       chunkSize: 1024 * 1024,
       maxFileUploads: 3, 
       maxFileChunksUploads: 3, 
     },
     requestOptions: {
-      timeout :0,
-      baseURL: 'http://localhost:3000',
-      url: '/upload',
+      baseURL: 'http://localhost:3000', 
       method: 'post', 
+      url: '/upload/small', // 默认的url为小文件字段上传地址
+      largeUrl: { // 大文件有关上传的属性
+        timeout:0,
+        upload : {
+          url : '/upload/large', // 大文件分片上传
+        },
+        check:{
+          url: '/upload/largeCheck', // 大文件分片的查询
+        },
+        merge:{
+          url: '/upload/largeMerge', // 大文件分片的合并
+        },
+      } 
     }
   }
   return (

@@ -93,6 +93,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
 
       const {chunkSize, maxFileUploads, maxFileChunksUploads,accept,multipleNum,multiple} = this.options.uploadOptions
+
       const { isValid, invalidFiles } = validateFiles(Array.from(files), accept ?? '')
 
       //多文件校验数量
@@ -120,10 +121,10 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
             chunkSize,
             maxFileUploads, 
             maxFileChunksUploads, 
-            baseURL: this.options.requestOptions.baseURL as string ,
-            timeout: this.options.requestOptions.timeout,
+            largeUrl: this.options.requestOptions.largeUrl,
+            baseURL: this.options.requestOptions.baseURL as string , 
             onProgress(resChunks) {
-               console.log(resChunks, '分片上传成功');
+               // console.log(resChunks, '分片上传成功');
             }
          })
          httpRes = await largefileRes
@@ -143,7 +144,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                         [key]: getFileProto(file),   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
                      })
                   }
-               })
+               }) 
                return this.httpRequest({
    
                   ...this.options.requestOptions,

@@ -23,7 +23,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
 
 
       }
-
+      e.target.value = ''
    };
    // 开启既传既更
    // useEffect(() => { 
