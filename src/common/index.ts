@@ -181,7 +181,7 @@ class LargeFile implements LargeFileType {
     * @returns {Promise<any[]>} - 分片数组
     */
    craeteChunk(file: File, uploadedChunks: never[], chunkSize: string | number): Promise<any[]> {
-      return new Promise((resolve, reject) => {
+      return new Promise( resolve => {
          this.chunkWorker.postMessage({
             file,
             uploadedChunks,
@@ -191,7 +191,7 @@ class LargeFile implements LargeFileType {
             console.log(data, '主线程接收消息');
             resolve(data.data);
          };
-         this.chunkWorker.onerror = () => reject([]);
+         this.chunkWorker.onerror = () => resolve([]);
       });
    }
 
@@ -278,22 +278,25 @@ class LargeFile implements LargeFileType {
             return Promise.reject(new Error("上传已暂停"));
          } 
          const resChunks = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks['apiRes'] 
-         console.log(resChunks.data.index, '分片上传成功');
+         // console.log(resChunks.data.index, '分片上传成功');
 
          // 查询第二次已上传的分片方便progress
          const actionsChunks = await this.getUploadedChunks(fileHash);
-         console.log('第二次查询已上传的分片:', actionsChunks.data?.uploadedChunks.length / totalChunksNum);
+         // console.log('第二次查询已上传的分片:', actionsChunks.data?.uploadedChunks.length / totalChunksNum);
 
          if (actionsChunks.code === 200) {
             Reflect.set(fileInfo,'uploadedChunks',actionsChunks.data?.uploadedChunks || []);
             Reflect.set(fileInfo,'progress',Math.round((actionsChunks.data?.uploadedChunks.length / totalChunksNum) * 100)); // 更新文件上传进度
          }
-
+         
          //判断服务器的分片是否全部上传完成
-         if(actionsChunks.data?.uploadedChunks.length === totalChunksNum) {
+         if(!Reflect.has(fileInfo,'merged') && actionsChunks.data?.uploadedChunks.length === totalChunksNum) {
+            console.log(fileHash,'合并完成')
             Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
+            Reflect.set(fileInfo,'merged',true); 
             // 通知服务器合并分片
             await this.mergeFileChunks(fileHash, file.name);
+            
          }
          if(this.onProgress) this.onProgress({
             apiRes : resChunks,  // 分片上传结果

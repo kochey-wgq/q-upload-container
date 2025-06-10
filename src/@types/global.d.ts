@@ -46,16 +46,18 @@ declare global {
    interface UploadEventGatherType<T> {
       options: T,
       triggerFileSelect: (parmas: TriggerFileSelectPro) => (Promise | void),
-      getResources: (config: AxiosConfig) => Promise<string>
+      getResources: (config: AxiosConfig) => Promise<Record<string,any> | string>
    }
    //进度条配置
    interface ProgressData {
       file?:File        // 文件
       error?: string,   // 是否可读取资源
-      status: string,      // 上传/下载状态
-      percentage: 0,    // 进度
-      progressType: string  // 进度条类型
-      axiosOrgProgress?: Record<string, any> // 原始axios进度条事件
+      status?: string,      // 上传/下载状态
+      percentage?: 0,    // 进度
+      progressType?: string,  // 进度条类型
+      axiosOrgProgress?: Record<string, any>, // 
+      apiRes?: AxiosRequestConfig,
+      fileInfo?: Record<string, any>
    }
    //aside配置
    interface AxiosConfig extends AxiosRequestConfig {

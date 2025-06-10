@@ -8,7 +8,8 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const {
       uploadOptions,
       triggerFileSelect,
-      getResources
+      getResources,
+      toggleLargefile
    } = props
    const [files, setFiles] = useState<any>([]);
    const [isDragActive, setIsDragActive] = useState(false);
@@ -89,33 +90,44 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       setFiles([]);
    };
 
-   const startUpload = () => {
+   const startUpload = (currentFile?:File) => {
       if (files.length === 0) {
          alert('请先添加文件');
          return;
-      }
-
-      // files.forEach((fileObj, index) => {
-      //    simulateUpload(fileObj, index);
-      // });
+      } 
 
       triggerFileSelect({
-         data: files.filter(t => t.status !== 'done'),
-         onProgress: async (progress: any) => {
+         data: (() => {
+            return currentFile ? [currentFile] : files.filter(t => t.status !== 'done') 
+         })(),
+         onProgress: async (data: any) => {
             const findFiles = files.map(async (item: any) => {
                const key = await getFileHash(item)
-               if (Object.keys(progress).includes(key)) {
-                  const { status, percentage } = progress
-                  console.log(key, status, percentage, 'files')
-                  item.progress = percentage
-                  item.status = status
+               // 大文件上传
+               if(toggleLargefile){
+                  const {apiRes,fileInfo} = data
+                  const {code} = apiRes
+                  const { progress,fileHash,status} = fileInfo
+                  if (code === 200 && fileHash === key) { 
+                     console.log(key, fileHash, progress,'onProgress')
+                     item.progress = progress
+                     item.status = status
 
+                  }
+               }else{ // 小文件上传
+                  if (Object.keys(data).includes(key)) {
+                     const { status, percentage } = data
+                     console.log(key, status, percentage, 'files')
+                     item.progress = percentage
+                     item.status = status
+
+                  }
                }
                return item
             })
             const newFiles = await Promise.all(findFiles)
             setFiles(newFiles);
-            console.log(progress, '上传进度')
+            console.log(data, '上传进度')
          },
          result: (data: any) => {
             console.log(data, '上传result')
@@ -170,20 +182,34 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    }, []);
    const getList = async () => {
       const list = await fetchData();
-      const listBlob = list.data.map((t: any) => getResource(t.fileName))
-      Promise.allSettled(listBlob).then((res: any) => {
+      const smalls = list.data.smallFiles.map((t: any) => getResource(t.fileName,{type:'small'}))
+      const larges = list.data.largeFiles.map((t: any) => getResource(t.fileName,{type:'large'})) 
+      Promise.allSettled([...smalls,...larges]).then((res: any) => {  
          setImgs(res)
       })
    }
 
 
-   const getResource = async (fileName: string): Promise<any> => {
+   const getResource = async (fileName: string,params:any): Promise<any> => {
       const blob = await getResources({
          baseURL: 'http://localhost:3000',
          url: `/upload/${fileName}`,
          method: 'get',
+         params
       })
       return blob
+   }
+
+
+   const renderDom = (item:any) => {
+      item = item.value
+      if(item.type.includes('image')){
+         return <img src={item.url} alt={item.type} className={styles.image}/>
+      }else  if(item.type.includes('video')){
+         return <video controls>
+            <source src={item.url} type={item.type} className={styles.image}/>
+         </video>
+      }
    }
    return (
       <div className={styles.uploadContainer}>
@@ -228,7 +254,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                         ></div>
                      </div>
                      <div className={styles.hanlder}>
-                        <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`}>开始上传</button> 
+                        <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`} onClick={() => startUpload(file)}>开始上传</button> 
                         <div
                            className={styles.status}
                            style={{ color: getStatusColor(file.status) }}
@@ -242,7 +268,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          </div>
 
          <div className={styles.actions}>
-            <button onClick={startUpload} className={`${styles.btn} ${styles.primary}`}>全部上传</button>
+            <button onClick={() => startUpload()} className={`${styles.btn} ${styles.primary}`}>全部上传</button>
             <button onClick={clearAll} className={`${styles.btn} ${styles.secondary}`}>清空列表</button>
          </div>
          <br /><br /><br /><br />
@@ -250,11 +276,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          <div className={styles.exampleImages}>
             {imgs.map((item, index) => (
                <div className={styles.imagePreview} key={index}>
-                  <img
-                     src={item.value}
-                     alt="示例图片"
-                     className={styles.image}
-                  />
+                  {renderDom(item)}
                </div>
             ))}
          </div>

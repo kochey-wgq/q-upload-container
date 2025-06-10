@@ -124,7 +124,8 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
             largeUrl: this.options.requestOptions.largeUrl,
             baseURL: this.options.requestOptions.baseURL as string , 
             onProgress(resChunks) {
-               // console.log(resChunks, '分片上传成功');
+               if(onProgress) onProgress(resChunks)
+               // console.log(resChunks,resChunks.fileInfo.progress, '分片上传成功');
             }
          })
          httpRes = await largefileRes
@@ -178,7 +179,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
     * @param {AxiosConfig} config 配置项 
     * @returns {Promise<Blob>} blob 资源
     */
-   getResources = async (config: AxiosConfig): Promise<string> => {
+   getResources = async (config: AxiosConfig): Promise<Record<string,any> | string> => {
       const httpRes = await this.httpRequest({
          ...config,
          responseType: 'blob'
@@ -188,9 +189,11 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          { type: httpRes.data.type }
       );
 
-      const imageUrl = URL.createObjectURL(blob);
-
-      return imageUrl;
+      const imageUrl = URL.createObjectURL(blob); 
+      return {
+         url : imageUrl,
+         type : httpRes.data.type
+      };
    }
 }
 export default UploadEventGather
