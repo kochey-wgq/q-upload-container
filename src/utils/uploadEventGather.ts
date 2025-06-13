@@ -1,5 +1,6 @@
 import http from '@/api/request.ts'
 import tools from '@/common'
+import type { LargeFileUpload } from '@/common'
 type handlerFileType = {
    files: FileList | [],
 } & UploadEventGatherOptions['uploadOptions']
@@ -17,14 +18,13 @@ type handlerFileType = {
  */
 class UploadEventGather implements UploadEventGatherType<UploadEventGatherOptions> {
    //包含请求的配置项和其他upload相关的配置项
-   options: UploadEventGatherOptions
+   options: UploadEventGatherOptions; 
 
    constructor(options: UploadEventGatherOptions) {
       if (!Object.prototype.hasOwnProperty.call(options.requestOptions, 'data')) {
          Reflect.set(options.requestOptions, 'data', {})
 
-      }
-
+      } 
       this.options = options;
    }
    httpRequest = async (config: AxiosConfig) => {
@@ -63,19 +63,18 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       return formData
    }
    /**
-    * @description 触发文件选择框
+    * @description 文件上传
     * @param {Object} params - 参数
-    * @param {TriggerFileSelectPro.data} params.data - 事件对象
-    * @param {TriggerFileSelectPro.onProgress} params.onProgress onProgress - 进度回调函数
-    * @param {TriggerFileSelectPro.result} params.result - API结果回调函数
+    * @param {FileStartUploadPro.data} params.data - 事件对象
+    * @param {FileStartUploadPro.onProgress} params.onProgress onProgress - 进度回调函数
+    * @param {FileStartUploadPro.result} params.result - API结果回调函数
    */
-   triggerFileSelect = async ({ data: event, onProgress, result }: TriggerFileSelectPro) => {
+   fileStartUpload = async ({ data: event, onProgress, result }: FileStartUploadPro) => {
       let files: handlerFileType['files'] = []
       const {
          validateFiles,    //校验文件类型
          getFileHash,      //获取文件哈希值
-         getFileProto,     //获取文件原型key
-         largeFileUpload   //大文件上传
+         getFileProto,     //获取文件原型key  
       } = tools
 
 
@@ -87,12 +86,12 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       }
 
       console.log('触发文件选择框', event, Array.from(files), 'files')
-      
+
       if (!files?.length) return
 
 
 
-      const {chunkSize, maxFileUploads, maxFileChunksUploads,accept,multipleNum,multiple} = this.options.uploadOptions
+      const { chunkSize, maxFileUploads, maxFileChunksUploads, accept, multipleNum, multiple } = this.options.uploadOptions
 
       const { isValid, invalidFiles } = validateFiles(Array.from(files), accept ?? '')
 
@@ -112,42 +111,44 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       Reflect.set(this.options.requestOptions, 'data', {
          ...this.options.requestOptions.data,
          accept: typeof accept === 'string' ? accept.split(',') : ''
-      }) 
- 
+      })
+
       let httpRes = null
-      if(this.options.toggleLargefile) {  //开启大文件上传
-         const largefileRes = largeFileUpload({
+      if (this.options.toggleLargefile) {  //开启大文件上传
+         tools.initLargeUplod({
             files,
             chunkSize,
-            maxFileUploads, 
-            maxFileChunksUploads, 
+            maxFileUploads,
+            maxFileChunksUploads,
             largeUrl: this.options.requestOptions.largeUrl,
-            baseURL: this.options.requestOptions.baseURL as string , 
+            baseURL: this.options.requestOptions.baseURL as string,
             onProgress(resChunks) {
-               if(onProgress) onProgress(resChunks)
+               if (onProgress) onProgress(resChunks)
                // console.log(resChunks,resChunks.fileInfo.progress, '分片上传成功');
             }
-         })
+         }) 
+         const largefileRes = tools.largeFileUpload()
          httpRes = await largefileRes
-         console.log('上传完成所有分片', httpRes) 
-      } else{  //小文件上传 则利用axios 的progress
+         console.log('上传完成所有分片', httpRes)
+      } else {  //小文件上传 
          const smallFileRes = async () => {
             const arr = (Array.from(files)).map(async file => {
                // 计算文件哈希值256方式作为file的唯一标识
                const key = await getFileHash(file)
-   
-   
+
+               //利用axios 的progress
                this.options.requestOptions.onProgress = (async data => {
-   
+
                   if (onProgress) {
                      onProgress({
                         ...data,
-                        [key]: getFileProto(file),   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
+                        file : getFileProto(file) as File,
+                        fileHash: key,   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
                      })
                   }
-               }) 
+               })
                return this.httpRequest({
-   
+
                   ...this.options.requestOptions,
                   data: this.handlerFileParmas({
                      ...this.options.uploadOptions,
@@ -175,11 +176,17 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
    }
    /**
+    * 
+    * @param data 待暂停上传的文件
+    * @returns 已暂停上传的文件
+    */
+   filePausedUpload = async (data: LargeFileUpload['files'] | File) :Promise< LargeFileUpload['files'] | File> => await tools.pausedUpload(data)
+   /**
     * 获取blob资源
     * @param {AxiosConfig} config 配置项 
     * @returns {Promise<Blob>} blob 资源
     */
-   getResources = async (config: AxiosConfig): Promise<Record<string,any> | string> => {
+   getResources = async (config: AxiosConfig): Promise<Record<string, any> | string> => {
       const httpRes = await this.httpRequest({
          ...config,
          responseType: 'blob'
@@ -189,10 +196,10 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          { type: httpRes.data.type }
       );
 
-      const imageUrl = URL.createObjectURL(blob); 
+      const imageUrl = URL.createObjectURL(blob);
       return {
-         url : imageUrl,
-         type : httpRes.data.type
+         url: imageUrl,
+         type: httpRes.data.type
       };
    }
 }

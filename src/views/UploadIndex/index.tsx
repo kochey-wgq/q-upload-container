@@ -7,7 +7,8 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const [imgs, setImgs] = useState([])
    const {
       uploadOptions,
-      triggerFileSelect,
+      fileStartUpload,
+      filePausedUpload,
       getResources,
       toggleLargefile
    } = props
@@ -29,7 +30,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    // 开启既传既更
    // useEffect(() => { 
    //    if(files.length < 0 ) return
-   //    triggerFileSelect({
+   //    fileStartUpload({
    //       data: files.filter(t => t.status !== 'done'),
    //       onProgress: async (progress: any) => {
    //          const findFiles = files.map(async (item: any) => {
@@ -89,45 +90,47 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const clearAll = () => {
       setFiles([]);
    };
-
+   const paused  = (currentFile?:File) =>{
+      filePausedUpload(currentFile ? currentFile : files).then(data =>{
+         console.log(data,'暂停文件成功')
+      })
+   }
    const startUpload = (currentFile?:File) => {
       if (files.length === 0) {
          alert('请先添加文件');
          return;
       } 
 
-      triggerFileSelect({
+      fileStartUpload({
          data: (() => {
             return currentFile ? [currentFile] : files.filter(t => t.status !== 'done') 
          })(),
          onProgress: async (data: any) => {
-            const findFiles = files.map(async (item: any) => {
-               const key = await getFileHash(item)
+            console.log(data, '上传进度')
+            const findFiles = files.map(async (item: any) => { 
                // 大文件上传
                if(toggleLargefile){
                   const {apiRes,fileInfo} = data
                   const {code} = apiRes
-                  const { progress,fileHash,status} = fileInfo
-                  if (code === 200 && fileHash === key) { 
-                     console.log(key, fileHash, progress,'onProgress')
+                  const { progress,status,file} = fileInfo
+                  if (code === 200 && file.name === item.name) { 
+                     
                      item.progress = progress
                      item.status = status
-
                   }
                }else{ // 小文件上传
-                  if (Object.keys(data).includes(key)) {
-                     const { status, percentage } = data
-                     console.log(key, status, percentage, 'files')
+                  const { status, percentage,file } = data
+                  if (file.name === item.name) {
                      item.progress = percentage
                      item.status = status
 
                   }
-               }
+               } 
                return item
             })
             const newFiles = await Promise.all(findFiles)
-            setFiles(newFiles);
-            console.log(data, '上传进度')
+            setFiles(() => newFiles);
+            
          },
          result: (data: any) => {
             console.log(data, '上传result')
@@ -201,7 +204,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    }
 
 
-   const renderDom = (item:any) => {
+   const renderDom = (item:any) => { 
       item = item.value
       if(item.type.includes('image')){
          return <img src={item.url} alt={item.type} className={styles.image}/>
@@ -252,7 +255,9 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                            className={styles.progressBar}
                            style={{ width: `${file.progress}%` }}
                         ></div>
+                        
                      </div>
+                     <div>{file.progress}%</div>
                      <div className={styles.hanlder}>
                         <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`} onClick={() => startUpload(file)}>开始上传</button> 
                         <div
@@ -269,6 +274,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
 
          <div className={styles.actions}>
             <button onClick={() => startUpload()} className={`${styles.btn} ${styles.primary}`}>全部上传</button>
+            <button onClick={() => paused()} className={`${styles.btn} ${styles.secondary}`}>全部暂停</button>
             <button onClick={clearAll} className={`${styles.btn} ${styles.secondary}`}>清空列表</button>
          </div>
          <br /><br /><br /><br />

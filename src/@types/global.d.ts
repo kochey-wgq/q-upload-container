@@ -1,8 +1,9 @@
 
 import { AxiosRequestConfig } from 'axios';
+import type { LargeFileItem } from '@/common'
 declare global {
    // 选择文件后触发的参数类型
-   type TriggerFileSelectPro = {
+   type FileStartUploadPro = {
       data: EventType,
       onProgress: (parmas: ProgressData) => void,
       result: (parmas: AxiosResponse<any, any>[]) => void
@@ -44,13 +45,15 @@ declare global {
 
    //事件类型
    interface UploadEventGatherType<T> {
-      options: T,
-      triggerFileSelect: (parmas: TriggerFileSelectPro) => (Promise | void),
-      getResources: (config: AxiosConfig) => Promise<Record<string,any> | string>
+      options: T,    // 上传数据 
+      fileStartUpload: (parmas: FileStartUploadPro) => (Promise | void), // 文件上传
+      filePausedUpload: (data: LargeFileItem | LargeFileItem[]) => Promise< LargeFileItem | LargeFileItem[]>,  // 文件暂停上传
+      getResources: (config: AxiosConfig) => Promise<Record<string,any> | string>   // 获取上传资源
    }
    //进度条配置
    interface ProgressData {
       file?:File        // 文件
+      fileHash?:string,  // 文件hash
       error?: string,   // 是否可读取资源
       status?: string,      // 上传/下载状态
       percentage?: 0,    // 进度

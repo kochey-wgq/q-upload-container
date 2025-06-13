@@ -4,12 +4,12 @@ import UploadContainer from '@/components/UploadContainer'
 import UploadIndex from '@/views/UploadIndex'
 function App() {
   const uploadParmas = {
-    toggleLargefile : true, // 是否开启大文件上传
+    toggleLargefile : false, // 是否开启大文件上传
     uploadOptions: {
-      accept: ['video/*'],
+      accept: ['image/*'],
       multipleNum: 2,
       multiple: true, 
-      chunkSize: 1024 * 1024,
+      chunkSize: 1024 * 100, 
       maxFileUploads: 3, 
       maxFileChunksUploads: 3, 
     },
