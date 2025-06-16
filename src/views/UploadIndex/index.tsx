@@ -27,33 +27,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       }
       e.target.value = ''
    };
-   // 开启既传既更
-   // useEffect(() => { 
-   //    if(files.length < 0 ) return
-   //    fileStartUpload({
-   //       data: files.filter(t => t.status !== 'done'),
-   //       onProgress: async (progress: any) => {
-   //          const findFiles = files.map(async (item: any) => {
-   //             const key = await getFileHash(item)
-   //             if (Object.keys(progress).includes(key)) {
-   //                const { status, percentage } = progress
-   //                console.log(key, status, percentage, 'files')
-   //                item.progress = percentage
-   //                item.status = status
-
-   //             }
-   //             return item
-   //          })
-   //          const newFiles = await Promise.all(findFiles)
-   //          setFiles(newFiles);
-   //          console.log(progress, '上传进度')
-   //       },
-   //       result: (data: any) => {
-   //          console.log(data, '上传result')
-   //          getList()
-   //       }
-   //    });
-   // }, [files.length])
+   
    const dragOver = (e: any) => {
       e.preventDefault();
       setIsDragActive(true);
@@ -90,47 +64,46 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const clearAll = () => {
       setFiles([]);
    };
-   const paused  = (currentFile?:File) =>{
-      filePausedUpload(currentFile ? currentFile : files).then(data =>{
-         console.log(data,'暂停文件成功')
-      })
+   const paused = async(currentFile?: File) => {
+      const data =  await filePausedUpload(currentFile ? currentFile : files) 
+      setFiles(data);
    }
-   const startUpload = (currentFile?:File) => {
+   const startUpload = (currentFile?: File) => {
       if (files.length === 0) {
          alert('请先添加文件');
          return;
-      } 
+      }
 
       fileStartUpload({
          data: (() => {
-            return currentFile ? [currentFile] : files.filter(t => t.status !== 'done') 
+            return currentFile ? [currentFile] : files.filter(t => t.status !== 'done')
          })(),
          onProgress: async (data: any) => {
             console.log(data, '上传进度')
-            const findFiles = files.map(async (item: any) => { 
+            const findFiles = files.map(async (item: any) => {
                // 大文件上传
-               if(toggleLargefile){
-                  const {apiRes,fileInfo} = data
-                  const {code} = apiRes
-                  const { progress,status,file} = fileInfo
-                  if (code === 200 && file.name === item.name) { 
-                     
+               if (toggleLargefile) {
+                  const { apiRes, fileInfo } = data
+                  const { code } = apiRes
+                  const { progress, status, file } = fileInfo
+                  if (code === 200 && file.name === item.name) {
+
                      item.progress = progress
                      item.status = status
                   }
-               }else{ // 小文件上传
-                  const { status, percentage,file } = data
+               } else { // 小文件上传
+                  const { status, percentage, file } = data
                   if (file.name === item.name) {
                      item.progress = percentage
                      item.status = status
 
                   }
-               } 
+               }
                return item
             })
             const newFiles = await Promise.all(findFiles)
-            setFiles(() => newFiles);
-            
+            setFiles(newFiles);
+
          },
          result: (data: any) => {
             console.log(data, '上传result')
@@ -185,15 +158,15 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    }, []);
    const getList = async () => {
       const list = await fetchData();
-      const smalls = list.data.smallFiles.map((t: any) => getResource(t.fileName,{type:'small'}))
-      const larges = list.data.largeFiles.map((t: any) => getResource(t.fileName,{type:'large'})) 
-      Promise.allSettled([...smalls,...larges]).then((res: any) => {  
+      const smalls = list.data.smallFiles.map((t: any) => getResource(t.fileName, { type: 'small' }))
+      const larges = list.data.largeFiles.map((t: any) => getResource(t.fileName, { type: 'large' }))
+      Promise.allSettled([...smalls, ...larges]).then((res: any) => {
          setImgs(res)
       })
    }
 
 
-   const getResource = async (fileName: string,params:any): Promise<any> => {
+   const getResource = async (fileName: string, params: any): Promise<any> => {
       const blob = await getResources({
          baseURL: 'http://localhost:3000',
          url: `/upload/${fileName}`,
@@ -204,14 +177,34 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    }
 
 
-   const renderDom = (item:any) => { 
+   const renderDom = (item: any) => {
       item = item.value
-      if(item.type.includes('image')){
-         return <img src={item.url} alt={item.type} className={styles.image}/>
-      }else  if(item.type.includes('video')){
+      if (item.type.includes('image')) {
+         return <img src={item.url} alt={item.type} className={styles.image} />
+      } else if (item.type.includes('video')) {
          return <video controls>
-            <source src={item.url} type={item.type} className={styles.image}/>
+            <source src={item.url} type={item.type} className={styles.image} />
          </video>
+      }
+   }
+
+   const fileStatus = (status: string) => {
+      switch (status) {
+         case 'uploading':
+            return <div className={styles.status}
+               style={{ color: getStatusColor(status) }}>上传中</div>
+         case 'paused':
+            return <div className={styles.status}
+               style={{ color: getStatusColor(status) }}>已暂停</div>
+         case 'done':
+            return <div className={styles.status}
+               style={{ color: getStatusColor(status) }}>完成</div>
+         case 'error':
+            return <div className={styles.status}
+               style={{ color: getStatusColor(status) }}>错误</div>
+         default:
+            return <div className={styles.status}
+               style={{ color: getStatusColor(status) }}>等待上传</div>
       }
    }
    return (
@@ -255,17 +248,12 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                            className={styles.progressBar}
                            style={{ width: `${file.progress}%` }}
                         ></div>
-                        
+
                      </div>
                      <div>{file.progress}%</div>
                      <div className={styles.hanlder}>
-                        <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`} onClick={() => startUpload(file)}>开始上传</button> 
-                        <div
-                           className={styles.status}
-                           style={{ color: getStatusColor(file.status) }}
-                        >
-                           {file.status === 'pending' ? '等待上传' : (file.status === 'uploading' ? '上传中...' : '上传完成')}
-                        </div>
+                        <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`} onClick={() => startUpload(file)}>开始上传</button>
+                        {fileStatus(file.status)}
                      </div>
                   </div>
                ))

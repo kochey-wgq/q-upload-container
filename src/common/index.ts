@@ -4,10 +4,11 @@ import { AxiosRequestConfig } from 'axios';
 type ReturnValidateFiles = { isValid: boolean, invalidFiles: File[] }
 
 type ResponseChunks = {
-   apiRes : responseType<{
+   apiRes: responseType<{
       chunkSize :number;
       index: number;
       totalChunksSize: number;
+      uploadedChunks: number[];
    }>,
    fileInfo : LargeFileItem,
    // files: FileList | File[], 
@@ -257,7 +258,7 @@ class LargeFile implements LargeFileType {
    async uploadFile(fileInfo: LargeFileItem): Promise<any> {
       const { file, fileHash } = fileInfo;
       console.log('开始上传文件:', fileInfo);
-      Reflect.set(fileInfo,'status','uploading'); // 更新文件状态为已完成
+      
       // 查询一次已上传的分片
       const alreadyChunks = await this.getUploadedChunks(fileHash);
       console.log('已上传的分片:', alreadyChunks);
@@ -270,42 +271,39 @@ class LargeFile implements LargeFileType {
       const totalChunksNum = Math.ceil(file.size / (this.chunkSize as number));
 
       const controller = new AbortController();
-      this.controllers[fileHash] = controller;
-
+      this.controllers[fileHash] = controller; 
       const chunksRes = chunks.map(async chunk => {
-         // 如果文件状态为暂停，则中止上传
-         if (fileInfo.status === 'paused') {
-            controller.abort();
-            return Promise.reject(new Error("上传已暂停"));
-         } 
-         const resChunks = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks['apiRes'] 
+         // 并发分片上传
+         const resChunks  = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks['apiRes'] 
          // console.log(resChunks.data.index, '分片上传成功');
 
-         // 查询第二次已上传的分片方便progress
-         const actionsChunks = await this.getUploadedChunks(fileHash);
-         console.log('第二次查询已上传的分片:', actionsChunks.data?.uploadedChunks.length / totalChunksNum);
-
-         if (actionsChunks.code === 200) {
-            Reflect.set(fileInfo,'uploadedChunks',actionsChunks.data?.uploadedChunks || []);
-            Reflect.set(fileInfo,'progress',Math.round((actionsChunks.data?.uploadedChunks.length / totalChunksNum) * 100)); // 更新文件上传进度
-         }
          
-         if(this.onProgress) this.onProgress({
-            apiRes : resChunks,  // 分片上传结果
-            fileInfo,            // 文件信息
-            // files : this.files     // 所有文件 
-         })  //更新进度条回调
+         // 更新文件状态为上传中
+         Reflect.set(fileInfo,'status','uploading'); 
+         // 已上传的分片方便progress 
+         const actionsChunks = resChunks?.data?.uploadedChunks
+         console.log('已上传的分片:', actionsChunks?.length / totalChunksNum,actionsChunks?.length,totalChunksNum);
+
+         Reflect.set(fileInfo,'uploadedChunks',actionsChunks || []);
+         Reflect.set(fileInfo,'progress',Math.round((actionsChunks?.length / totalChunksNum) * 100)); // 更新文件上传进度
+         
+         
 
          //判断服务器的分片是否全部上传完成
-         if(!Reflect.has(fileInfo,'merged') && actionsChunks.data?.uploadedChunks.length === totalChunksNum) {
+         if(!Reflect.has(fileInfo,'merged') && actionsChunks?.length === totalChunksNum) {
             console.log(fileHash,'合并完成')
-            Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
+            
             Reflect.set(fileInfo,'merged',true); 
             // 通知服务器合并分片
             await this.mergeFileChunks(fileHash, file.name);
+            Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
             
-         }
-         
+         } 
+
+         if(this.onProgress) this.onProgress({
+            apiRes : resChunks,  // 分片上传结果
+            fileInfo,            // 文件信息  
+         })  //更新进度条回调
          return resChunks;
       }); 
       return Promise.all(chunksRes);
