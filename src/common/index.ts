@@ -257,46 +257,71 @@ class LargeFile implements LargeFileType {
     */
    async uploadFile(fileInfo: LargeFileItem): Promise<any> {
       const { file, fileHash } = fileInfo;
-      console.log('开始上传文件:', fileInfo);
-      
-      // 查询一次已上传的分片
-      const alreadyChunks = await this.getUploadedChunks(fileHash);
-      console.log('已上传的分片:', alreadyChunks);
+      let uploadedBytes = 0
+      //通知服务器合并分片
+      const mergeChunk  = async () =>{
+         console.log(fileHash,'合并完成')
+            
+         Reflect.set(fileInfo,'merged',true); 
+         // 通知服务器合并分片
+         await this.mergeFileChunks(fileHash, file.name);
+         Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
+      }
 
+
+      console.log('开始上传文件:', fileInfo);
+      // 更新文件状态为上传中
+      // Reflect.set(fileInfo,'status','uploading'); 
+      // 查询一次已上传的分片
+      const alreadyChunks = await this.getUploadedChunks(fileHash); 
+      const totalChunksNum = Math.ceil(file.size / (this.chunkSize as number)); // 计算总分片数
+      console.log('开始上传-已上传的分片:', alreadyChunks);
+
+
+      //首次先查询更新文件状态、获取已上传的分片大小
+      if(alreadyChunks.code === 200) {
+          // 更新已上传字节数
+         if(alreadyChunks.data.uploadedChunks.length) uploadedBytes = +((this.chunkSize as number) * alreadyChunks.data.uploadedChunks.length)
+
+         //如果上传的分片数量等于总分片数，说明文件已经上传完成
+         if(alreadyChunks.data.uploadedChunks.length === totalChunksNum){
+            await mergeChunk(); // 合并分片
+            Reflect.set(fileInfo,'progress',100); // 更新文件上传进度
+            if(this.onProgress) this.onProgress({
+               apiRes : [] as any,  // 分片上传结果
+               fileInfo,            // 文件信息  
+            })
+            return Promise.resolve([]); // 返回已完成的文件信息
+         }
+         
  
+      }
 
       if (alreadyChunks.code === 200) Reflect.set(fileInfo,'uploadedChunks',alreadyChunks.data?.uploadedChunks || []); // 更新已上传的分片索引
 
       const chunks = await this.craeteChunk(file, fileInfo.uploadedChunks, this.chunkSize as number);
-      const totalChunksNum = Math.ceil(file.size / (this.chunkSize as number));
 
+      //API控制器
       const controller = new AbortController();
       this.controllers[fileHash] = controller; 
+
+
       const chunksRes = chunks.map(async chunk => {
          // 并发分片上传
          const resChunks  = await this.concurrentFile.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks['apiRes'] 
          // console.log(resChunks.data.index, '分片上传成功');
-
-         
-         // 更新文件状态为上传中
-         Reflect.set(fileInfo,'status','uploading'); 
-         // 已上传的分片方便progress 
-         const actionsChunks = resChunks?.data?.uploadedChunks
-         console.log('已上传的分片:', actionsChunks?.length / totalChunksNum,actionsChunks?.length,totalChunksNum);
-
-         Reflect.set(fileInfo,'uploadedChunks',actionsChunks || []);
-         Reflect.set(fileInfo,'progress',Math.round((actionsChunks?.length / totalChunksNum) * 100)); // 更新文件上传进度
+         console.log(fileInfo.status, '文件状态');
+         uploadedBytes += resChunks.data.chunkSize; // 累加已上传字节 
+         // console.log('正在上传-已上传的分片:', actionsChunks?.length / totalChunksNum,actionsChunks?.length,totalChunksNum);
+         console.log('正在上传-已上传的分片:', uploadedBytes / file.size,uploadedBytes,file.size);
+         const progress = Math.round((uploadedBytes / file.size) * 100 >= 100 ? 100 : Math.round((uploadedBytes / file.size) * 100))
+         Reflect.set(fileInfo,'progress',progress); // 更新文件上传进度
          
          
 
          //判断服务器的分片是否全部上传完成
-         if(!Reflect.has(fileInfo,'merged') && actionsChunks?.length === totalChunksNum) {
-            console.log(fileHash,'合并完成')
-            
-            Reflect.set(fileInfo,'merged',true); 
-            // 通知服务器合并分片
-            await this.mergeFileChunks(fileHash, file.name);
-            Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
+         if(!Reflect.has(fileInfo,'merged') && uploadedBytes  >= file.size) {
+            await mergeChunk(); // 合并分片
             
          } 
 

@@ -83,10 +83,9 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
             const findFiles = files.map(async (item: any) => {
                // 大文件上传
                if (toggleLargefile) {
-                  const { apiRes, fileInfo } = data
-                  const { code } = apiRes
+                  const { fileInfo } = data 
                   const { progress, status, file } = fileInfo
-                  if (code === 200 && file.name === item.name) {
+                  if (file.name === item.name) {
 
                      item.progress = progress
                      item.status = status
