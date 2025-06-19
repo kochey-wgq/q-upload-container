@@ -3,17 +3,26 @@ import http from '@/api/request.ts'
 import { AxiosRequestConfig } from 'axios'; 
 type ReturnValidateFiles = { isValid: boolean, invalidFiles: File[] }
 
-type ResponseChunks = {
-   apiRes: responseType<{
-      chunkSize :number;
-      index: number;
-      totalChunksSize: number;
-      uploadedChunks: number[];
-   }>,
-   fileInfo : LargeFileItem,
-   // files: FileList | File[], 
+type ResponseChunks<T> = {
+   apiRes: responseType<T>,
+   fileInfo : LargeFileItem, 
+}
+type ResponseChunksJSON = {
+   chunkSize :number;   // 切片大小
+   index: number;      // 切片索引
+   totalChunksSize: number;   // 切片总大小
+   uploadedChunks: number[];  // 已经上传的切片索引
 }
 
+type ResponseMergeJSON = {
+   originalname: string, // 原始文件名
+   mimetype: string, // 文件的 MIME 类型
+   suffixType: string, // 扩展名
+   destination: string, // 文件存放的目录
+   fileName: string, // 文件名
+   path: string, // 文件的完整路径
+   size: number // 文件大小
+}
 export type LargeFileUpload = { 
    files: FileList | File[], 
    chunkSize?: number,  // 分片大小
@@ -26,7 +35,7 @@ export type LargeFileUpload = {
       merge?: AxiosRequestConfig, // 大文件分片的合并地址
    },
    baseURL: string, // 基础URL 
-   onProgress?: (params: ResponseChunks) => void, // 上传chunk的进度回调函数
+   onProgress?: <T>(params: ResponseChunks<T>) => void, // 上传chunk的进度回调函数
 }
 
 type LargeFileItem = {
@@ -282,13 +291,14 @@ class LargeFile implements LargeFileType {
       const controller = new AbortController();
       this.controller[fileHash] = controller
       //通知服务器合并分片
-      const mergeChunk  = async () =>{
+      const mergeChunk  = async (): Promise<responseType<ResponseMergeJSON>> => {
          console.log(fileHash,'合并完成')
             
          Reflect.set(fileInfo,'merged',true);  
          // 通知服务器合并分片
-         await this.mergeFileChunks(fileHash, file.name);
+         const apiRes = await this.mergeFileChunks(fileHash, file.name);
          Reflect.set(fileInfo,'status','done'); // 更新文件状态为已完成
+         return apiRes;
       }
 
 
@@ -312,10 +322,10 @@ class LargeFile implements LargeFileType {
 
          //如果上传的分片数量等于总分片数，说明文件已经上传完成
          if(alreadyChunks.data.uploadedChunks.length === totalChunksNum){
-            await mergeChunk(); // 合并分片
+            const apiRes = await mergeChunk(); // 合并分片
             Reflect.set(fileInfo,'progress',100); // 更新文件上传进度
-            if(this.onProgress) this.onProgress({
-               apiRes : [] as any,  // 分片上传结果
+            if(this.onProgress) this.onProgress<ResponseMergeJSON>({
+               apiRes,  // 分片上传结果
                fileInfo,            // 文件信息  
             })
             return Promise.resolve([]); // 返回已完成的文件信息
@@ -335,12 +345,12 @@ class LargeFile implements LargeFileType {
  
          try {
             // 并发分片上传
-            const resChunks = await this.concurrentFileChunks.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as ResponseChunks['apiRes']
-            if (resChunks.code === 200) {
+            const apiRes = await this.concurrentFileChunks.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as responseType<ResponseChunksJSON>
+            if (apiRes.code === 200) {
 
-               // console.log(resChunks.data.index, '分片上传成功');
+               // console.log(apiRes.data.index, '分片上传成功');
                console.log(fileInfo.status, '文件状态');
-               fileInfo.uploadedBytes += resChunks.data.chunkSize; // 累加已上传字节  
+               fileInfo.uploadedBytes += apiRes.data.chunkSize; // 累加已上传字节  
                console.log('持续上传字节:', fileInfo.uploadedBytes);
                console.log('正在上传-已上传的分片:', fileInfo.uploadedBytes / file.size, fileInfo.uploadedBytes, file.size);
                const progress = Math.round((fileInfo.uploadedBytes / file.size) * 100 >= 100 ? 100 : Math.round((fileInfo.uploadedBytes / file.size) * 100))
@@ -355,12 +365,12 @@ class LargeFile implements LargeFileType {
 
                }
 
-               if (this.onProgress) this.onProgress({
-                  apiRes: resChunks,  // 分片上传结果
+               if (this.onProgress) this.onProgress<ResponseChunksJSON>({
+                  apiRes,  // 分片上传结果
                   fileInfo,            // 文件信息  
                })  //更新进度条回调
             }
-            return resChunks;
+            return apiRes;
          }catch (error) {
             console.error('分片上传失败:', error);
             Reflect.set(fileInfo,'status','error'); // 更新文件上传进度
@@ -371,7 +381,7 @@ class LargeFile implements LargeFileType {
             return Promise.reject([])
          }
       }); 
-      return Promise.all(chunksRes);
+      return Promise.allSettled(chunksRes);
    }
    /**
     * 暂停上传

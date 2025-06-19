@@ -6,11 +6,15 @@
     "Outlet": true,
     "Route": true,
     "Routes": true,
+    "StrictMode": true,
     "createRef": true,
+    "createRoot": true,
     "forwardRef": true,
     "lazy": true,
     "memo": true,
+    "request": true,
     "startTransition": true,
+    "uploadEventGather": true,
     "useCallback": true,
     "useContext": true,
     "useDebugValue": true,
@@ -37,14 +41,6 @@
     "useSearchParams": true,
     "useState": true,
     "useSyncExternalStore": true,
-    "useTransition": true,
-    "createRoot": true,
-    "StrictMode": true,
-    "test": true,
-    "App": true,
-    "uploadEventGather": true,
-    "request": true,
-    "httpProgress": true,
-    "progressData": true
+    "useTransition": true
   }
 }
