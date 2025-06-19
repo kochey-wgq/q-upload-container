@@ -14,7 +14,10 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    } = props
    const [files, setFiles] = useState<any>([]);
    const [isDragActive, setIsDragActive] = useState(false);
-
+   const filesRef = useRef(files);
+   useEffect(() => {
+      filesRef.current = files;
+   }, [files]);
    const triggerFileInput = () => {
       fileInputRef.current?.click();
    };
@@ -65,8 +68,12 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       setFiles([]);
    };
    const paused = async(currentFile?: File) => {
-      const data =  await filePausedUpload(currentFile ? currentFile : files) 
-      setFiles(data);
+      filePausedUpload(currentFile ? currentFile : filesRef.current) 
+      const findFiles = files.map(item => {
+          item.status = 'paused'
+         return item
+      })
+      setFiles(findFiles);
    }
    const startUpload = (currentFile?: File) => {
       if (files.length === 0) {
@@ -128,6 +135,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
 
    const getStatusColor = (status: any) => {
       switch (status) {
+         case 'error': return 'red';
          case 'uploading': return '#4a90e2';
          case 'done': return '#2ecc71';
          default: return '#666';
@@ -188,6 +196,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    }
 
    const fileStatus = (status: string) => {
+      console.log(status, 'fileStatus')
       switch (status) {
          case 'uploading':
             return <div className={styles.status}

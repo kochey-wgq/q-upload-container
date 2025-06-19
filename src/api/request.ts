@@ -81,7 +81,7 @@ request.interceptors.response.use(
       console.log(error, 'error')
       // 处理请求取消
       if (axios.isCancel(error)) {
-         return Promise.reject(new Error('请求被取消'))
+         // return Promise.reject(new Error('请求被取消'))
       }
 
       // 处理 HTTP 错误

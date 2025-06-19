@@ -9,7 +9,7 @@ function App() {
       accept: ['video/*'],
       multipleNum: 2,
       multiple: true, 
-      chunkSize: 1024 * 100, 
+      chunkSize: 1024 * 100,     
       maxFileUploads: 3, 
       maxFileChunksUploads: 3, 
     },
