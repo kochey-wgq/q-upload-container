@@ -96,6 +96,7 @@ class RequestConcurrency implements RequestConcurrencyType {
          this.queue.push({ fn, resolve, reject });
          this._run();
       });
+      
    }
    pause() {
       this.isPaused = true;
