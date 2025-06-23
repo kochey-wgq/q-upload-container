@@ -165,7 +165,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          httpRes = await smallFileRes()
       }
 
-      if (result) {
+      if (result) { 
          result(httpRes || [])
       } else {
          return httpRes

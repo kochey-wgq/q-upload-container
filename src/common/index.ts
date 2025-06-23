@@ -357,14 +357,20 @@ class LargeFile implements LargeFileType {
 
                Reflect.set(fileInfo, 'progress', progress); // 更新文件上传进度
 
-
+              
 
                //判断服务器的分片是否全部上传完成
                if (!Reflect.has(fileInfo, 'merged') && fileInfo.uploadedBytes >= file.size) {
                   await mergeChunk(); // 合并分片
 
                }
-
+               if(fileInfo.uploadedBytes / file.size < 1){
+                  console.log('还在存储');
+                  localStorage.setItem(`progress-${fileHash}`,String(progress)); // 存储上传进度到本地存储
+               }else{
+                  console.log('已经上传完毕');
+                  localStorage.removeItem(`progress-${fileHash}`); // 如果上传合并完成，移除本地存储的进度
+               }
                if (this.onProgress) this.onProgress<ResponseChunksJSON>({
                   apiRes,  // 分片上传结果
                   fileInfo,            // 文件信息  
@@ -526,8 +532,7 @@ const tools: Tools = {
     * @param {File} file - 要计算哈希值的文件
     * @returns {Promise<string>} - 返回一个 Promise，解析为文件的 SHA-256哈希值
     */
-   getFileHash: (file: File): Promise<string> => {
-      console.log('getFileHash', file) 
+   getFileHash: (file: File): Promise<string> => { 
       return new Promise<string>((resolve, reject) => {
          const reader = new FileReader();
 

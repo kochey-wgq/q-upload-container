@@ -30,7 +30,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       }
       e.target.value = ''
    };
-   
+
    const dragOver = (e: any) => {
       e.preventDefault();
       setIsDragActive(true);
@@ -48,29 +48,35 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       }
    };
 
-   const addFiles = (newFiles: any) => {
-      const newFileList = Array.from(newFiles).filter((file: any) =>
+   const addFiles = async (newFiles: any) => {
+      const filterFileList = Array.from(newFiles).filter((file: any) =>
          !files.some((f: any) =>
             f.name === file.name &&
             f.size === file.size &&
             f.lastModified === file.lastModified
          )
-      ).map((file: any) => Object.assign(file, {
-
-         progress: 0,
-         status: 'pending'
-      }));
-
+      ).map(async (file: any) => {
+         const fileHash = await getFileHash(file)
+         const progress = localStorage.getItem(`progress-${fileHash}`) || 0;
+         const status = progress ? 'paused' : 'pending'; 
+         Object.assign(file, {
+            progress,
+            status
+         }) 
+         return file
+      });
+      const newFileList = await Promise.all(filterFileList)
       setFiles((prev: any) => [...prev, ...newFileList]);
    };
 
    const clearAll = () => {
       setFiles([]);
    };
-   const paused = async(currentFile?: File) => {
-      filePausedUpload(currentFile ? currentFile : filesRef.current) 
+   const paused = async (currentFile?: File) => {
+      const res = await filePausedUpload(currentFile ? currentFile : filesRef.current)
+      console.log(res, '暂停上传')
       const findFiles = files.map(item => {
-          item.status = 'paused'
+         item.status = 'paused'
          return item
       })
       setFiles(findFiles);
@@ -90,7 +96,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
             const findFiles = files.map(async (item: any) => {
                // 大文件上传
                if (toggleLargefile) {
-                  const { fileInfo } = data 
+                  const { fileInfo } = data
                   const { progress, status, file } = fileInfo
                   if (file.name === item.name) {
 
