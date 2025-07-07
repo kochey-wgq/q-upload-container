@@ -27,6 +27,7 @@ declare global {
             upload: AxiosRequestConfig,   // 大文件上传地址
             check?: AxiosRequestConfig, // 大文件分片的查询地址
             merge?: AxiosRequestConfig, // 大文件分片的合并地址
+            second?: AxiosRequestConfig, // 大文件分片的秒传地址
          }, 
          onProgress?: (data: ProgressData) => void,
       } & AxiosRequestConfig,

@@ -58,11 +58,11 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       ).map(async (file: any) => {
          const fileHash = await getFileHash(file)
          const progress = localStorage.getItem(`progress-${fileHash}`) || 0;
-         const status = progress ? 'paused' : 'pending'; 
+         const status = progress ? 'paused' : 'pending';
          Object.assign(file, {
             progress,
             status
-         }) 
+         })
          return file
       });
       const newFileList = await Promise.all(filterFileList)
@@ -266,7 +266,11 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                      </div>
                      <div>{file.progress}%</div>
                      <div className={styles.hanlder}>
-                        <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`} onClick={() => startUpload(file)}>开始上传</button>
+                        <div>
+                           <button className={`${styles.playUpload} ${styles.btn} ${styles.primary}`} onClick={() => startUpload(file)}>开始上传</button>
+                           &nbsp;&nbsp;&nbsp;
+                           <button className={`${styles.playUpload} ${styles.btn} ${styles.secondary}`} onClick={() => paused(file)}>暂停</button>
+                        </div>
                         {fileStatus(file.status)}
                      </div>
                   </div>

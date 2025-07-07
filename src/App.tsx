@@ -28,6 +28,9 @@ function App() {
         merge:{
           url: '/upload/largeMerge', // 大文件分片的合并
         },
+        second:{
+          url: '/upload/largeSecond', // 大文件的秒传
+        },
       } 
     }
   }
