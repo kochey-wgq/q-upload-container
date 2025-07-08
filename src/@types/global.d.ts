@@ -59,9 +59,9 @@ declare global {
       status?: string,      // 上传/下载状态
       percentage?: 0,    // 进度
       progressType?: string,  // 进度条类型
-      axiosOrgProgress?: Record<string, any>, // 
+      axiosOrgProgress?: Record<string, unknown>,  
       apiRes?: AxiosRequestConfig,
-      fileInfo?: Record<string, any>
+      fileInfo?: Record<string, unknown>
    }
    //aside配置
    interface AxiosConfig extends AxiosRequestConfig {

@@ -51,7 +51,7 @@ interface Tools {
    chunkWorker: Worker,
    largeFile  : LargeFileType | null,  
    validateFiles: (files: File[], acceptRules: string | string[]) => ReturnValidateFiles,
-   getFileHash: (file: File) => Promise<string>,
+   getFileHash: (file: File | Record<string,unknown>) => Promise<string>,
    getFileProto: (file: File) => object,
    largeFileUpload: () => Promise<LargeFileItem[]>,
    initLargeUplod:  (params: LargeFileUpload) => void,
@@ -61,12 +61,12 @@ interface Tools {
 interface RequestConcurrencyType {
    max: number;
    current: number;
-   queue: any[];
+   queue: unknown[];
    isPaused: boolean;
    pause: () => void;
    resume: () => void;
-   add: (fn: Promise<any>) => Promise<unknown>;
-   _run: (fileInfo: Record<string, any>) => void;
+   add: (fn: Promise<unknown>) => Promise<unknown>;
+   _run: (fileInfo: Record<string, unknown>) => void;
 }
 
 
@@ -76,6 +76,7 @@ interface LargeFileType {
    uploadFile: (fileInfo: LargeFileItem) => Promise<any>;
    getUploadedChunks: (fileHash: string) => Promise<any>;
    startUpload: () => Promise<any>;
+   secondUpload: (fileHash:string) => Promise<any>;
    pausedUploadChunk : (target:LargeFileUpload['files'] | File )  => Promise<LargeFileUpload['files'] | File[]>
 }
 
@@ -571,37 +572,50 @@ const tools: Tools = {
     * @param {File} file - 要计算哈希值的文件
     * @returns {Promise<string>} - 返回一个 Promise，解析为文件的 SHA-256哈希值
     */
-   getFileHash: (file: File): Promise<string> => { 
+   getFileHash: (file: File | Record<string, unknown>): Promise<string> => {
       return new Promise<string>((resolve, reject) => {
-         const reader = new FileReader();
+         try { // 如果传输过来的是File文件
+            if (file instanceof File) {
+               const reader = new FileReader();
 
-         reader.onload = function (e: ProgressEvent<FileReader>) {
-            try {
-               if (!e.target?.result) {
-                  throw new Error('File reading failed - no result');
-               }
+               reader.onload = function (e: ProgressEvent<FileReader>) {
+                  try {
+                     if (!e.target?.result) {
+                        throw new Error('File reading failed - no result');
+                     }
 
-               const fileData = e.target.result as ArrayBuffer;
-               // 计算SHA-256哈希
-               const wordArray = CryptoJS.lib.WordArray.create(
-                  new Uint8Array(fileData)
-               );
-               const hash = CryptoJS.SHA256(wordArray);
+                     const fileData = e.target.result as ArrayBuffer;
+                     // 计算SHA-256哈希
+                     const wordArray = CryptoJS.lib.WordArray.create(
+                        new Uint8Array(fileData)
+                     );
+                     const hash = CryptoJS.SHA256(wordArray);
+                     resolve(hash.toString(CryptoJS.enc.Hex));
+                  } catch (error) {
+                     reject(error);
+                  }
+               };
+
+               reader.onerror = function () {
+                  reject(new Error(`File reading failed: ${reader.error?.message || 'Unknown error'}`));
+               };
+
+               reader.readAsArrayBuffer(file);
+            } else {
+               // 处理普通JS对象（转为JSON字符串再哈希）
+               const jsonString = JSON.stringify(file);
+               const hash = CryptoJS.SHA256(jsonString);
                resolve(hash.toString(CryptoJS.enc.Hex));
-            } catch (error) {
-               reject(error);
             }
-         };
+         } catch (error) {
+            reject(error);
+         }
 
-         reader.onerror = function () {
-            reject(new Error(`File reading failed: ${reader.error?.message || 'Unknown error'}`));
-         };
 
-         reader.readAsArrayBuffer(file);
       });
    },
    /**
-    * 
+    * 获取file文件原型链数据
     * @param {File} file - 文件对象
     * @description 过滤文件对象，去除不必要的属性，只保留标准属性
     * @returns  {File} - 过滤后的文件对象

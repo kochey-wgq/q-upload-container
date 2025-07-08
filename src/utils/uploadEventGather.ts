@@ -110,7 +110,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       //其他上传类型参数配置 
       Reflect.set(this.options.requestOptions, 'data', {
          ...this.options.requestOptions.data,
-         accept: typeof accept === 'string' ? accept.split(',') : ''
+         accept: typeof accept === 'string' ? accept.split(',') : accept
       })
 
       let httpRes = null
@@ -123,13 +123,11 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
             largeUrl: this.options.requestOptions.largeUrl,
             baseURL: this.options.requestOptions.baseURL as string,
             onProgress(resChunks) {
-               if (onProgress) onProgress(resChunks)
-               // console.log(resChunks,resChunks.fileInfo.progress, '分片上传成功');
+               if (onProgress) onProgress(resChunks) 
             }
          }) 
          const largefileRes = tools.largeFileUpload()
-         httpRes = await largefileRes
-         console.log('上传完成所有分片', httpRes)
+         httpRes = await largefileRes 
       } else {  //小文件上传 
          const smallFileRes = async () => {
             const arr = (Array.from(files)).map(async file => {

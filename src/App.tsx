@@ -3,24 +3,24 @@ import './App.css'
 import UploadContainer from '@/components/UploadContainer'
 import UploadIndex from '@/views/UploadIndex'
 function App() {
-  const uploadParmas = {
-    toggleLargefile : true, // 是否开启大文件上传
-    uploadOptions: {
-      accept: ['video/*'],
-      multipleNum: 2,
-      multiple: true, 
-      chunkSize: 1024 * 100,     
-      maxFileUploads: 3, 
-      maxFileChunksUploads: 3, 
+  const uploadParmas = {  // 上传组件的参数
+    // toggleLargefile : false, // 是否开启大文件上传
+    uploadOptions: {    // 上传参数
+      accept: ['image/png'],  // 接受的文件类型
+      multipleNum: 2, // 多文件上传时，允许的最大文件数量
+      multiple: true,   // 是否允许多文件上传
+      chunkSize: 1024 * 100,      // 分片大小，单位为字节
+      maxFileUploads: 3,  // 最大文件上传数量
+      maxFileChunksUploads: 3,  // 最大分片上传数量
     },
-    requestOptions: {
+    requestOptions: { // 请求配置
       baseURL: 'http://localhost:3000', 
       method: 'post', 
       url: '/upload/small', // 默认的url为小文件字段上传地址
       largeUrl: { // 大文件有关上传的属性
-        timeout:0,
         upload : {
-          url : '/upload/large', // 大文件分片上传
+          timeout:0,
+          url : '/upload/largeChunk', // 大文件分片上传
         },
         check:{
           url: '/upload/largeCheck', // 大文件分片的查询

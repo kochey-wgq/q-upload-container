@@ -1,6 +1,10 @@
 
 import styles from './index.module.less';
 import tools from '@/common'
+
+import { UploadOutlined } from '@ant-design/icons';
+import { Button, Upload } from 'antd';
+import type { UploadFile } from 'antd'; 
 const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const { getFileHash } = tools
    const fileInputRef = useRef<HTMLInputElement>(null);
@@ -10,6 +14,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       fileStartUpload,
       filePausedUpload,
       getResources,
+      requestOptions,
       toggleLargefile
    } = props
    const [files, setFiles] = useState<any>([]);
@@ -23,12 +28,16 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    };
 
    const handleFileChange = (e: any) => {
-      if (e.target.files.length > 0) {
-         addFiles(e.target.files);
+      console.log(e, '选择文件回调')
+      // if (e.target.files.length > 0) {
+      //    addFiles(e.target.files);
 
 
+      // }
+      // e.target.value = ''
+      if (e.fileList.length > 0) {
+         addFiles(e.fileList);
       }
-      e.target.value = ''
    };
 
    const dragOver = (e: any) => {
@@ -221,6 +230,29 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                style={{ color: getStatusColor(status) }}>等待上传</div>
       }
    }
+
+
+
+   const fileList: UploadFile[] = [
+      // {
+      //    uid: '0',
+      //    name: 'xxx.png',
+      //    status: 'uploading',
+      //    percent: 33,
+      // },
+      // {
+      //    uid: '-1',
+      //    name: 'yyy.png',
+      //    status: 'done',
+      //    url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+      //    thumbUrl: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
+      // },
+      // {
+      //    uid: '-2',
+      //    name: 'zzz.png',
+      //    status: 'error',
+      // },
+   ];
    return (
       <div className={styles.uploadContainer}>
          <h2>文件上传</h2>
@@ -283,7 +315,23 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
             <button onClick={() => paused()} className={`${styles.btn} ${styles.secondary}`}>全部暂停</button>
             <button onClick={clearAll} className={`${styles.btn} ${styles.secondary}`}>清空列表</button>
          </div>
-         <br /><br /><br /><br />
+         <br /><br /> 
+
+
+         <Upload
+            action={requestOptions.baseURL + requestOptions.url}
+            listType="picture"
+            onChange={handleFileChange}
+            beforeUpload={() => Promise.reject(false)} // 禁止自动上传
+            defaultFileList={fileList}
+         >
+            <Button type="primary" icon={<UploadOutlined />}>
+               Upload
+            </Button>
+         </Upload>
+
+
+
 
          <div className={styles.exampleImages}>
             {imgs.map((item, index) => (

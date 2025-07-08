@@ -1,8 +1,8 @@
-import axios from 'axios' 
+import axios ,{AxiosProgressEvent}from 'axios' 
 
 
 //上传进度条
-const httpProgressEvent = async (progressEvent: Record<string, any>, onProgress?: (data: ProgressData) => void) => {
+const httpProgressEvent = async (progressEvent: AxiosProgressEvent, onProgress?: (data: ProgressData) => void) => {
    const { progress, lengthComputable, download } = progressEvent
    //上传进度条数据
    const progressData: ProgressData = {
@@ -11,8 +11,8 @@ const httpProgressEvent = async (progressEvent: Record<string, any>, onProgress?
       progressType: 'upload' //进度条类型
    }
    if (lengthComputable) {
-      Reflect.set(progressData, 'percentage', Math.round(progress * 100))
-      Reflect.set(progressData, 'status', progress >= 1 ? 'done' : 'uploading') //是否完成
+      Reflect.set(progressData, 'percentage', Math.round((progress as number) * 100))
+      Reflect.set(progressData, 'status', (progress as number) >= 1 ? 'done' : 'uploading') //是否完成
       //表明是否为下载事件
       Reflect.set(progressData, 'progressType', download ? 'download' : 'upload')
    } else {
