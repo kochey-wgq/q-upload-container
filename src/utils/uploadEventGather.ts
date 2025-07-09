@@ -2,7 +2,7 @@ import http from '@/api/request.ts'
 import tools from '@/common'
 import type { LargeFileUpload } from '@/common'
 type handlerFileType = {
-   files: FileList | [],
+   files: FileList | [] | File[] | Array<object>,
 } & UploadEventGatherOptions['uploadOptions']
 
 
@@ -44,7 +44,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
    handlerFileParmas = (parmas: handlerFileType): FormData => {
       const {
          files,
-      } = parmas
+      } = parmas 
       const formData = new FormData()
       for (const fls of (files as FileList)) {
          formData.append('files', fls)
@@ -74,7 +74,8 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       const {
          validateFiles,    //校验文件类型
          getFileHash,      //获取文件哈希值
-         getFileProto,     //获取文件原型key  
+         getFileProto,     //获取文件原型key 
+         compressionImg    //图片压缩 
       } = tools
 
 
@@ -87,13 +88,26 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
 
       console.log('触发文件选择框', event, Array.from(files), 'files')
 
+      
+
       if (!files?.length) return
 
 
 
-      const { chunkSize, maxFileUploads, maxFileChunksUploads, accept, multipleNum, multiple } = this.options.uploadOptions
+      const { 
+         accept,                 // 接受的文件类型
+         multipleNum,            // 多文件上传时，允许的最大文件数量
+         multiple,               // 是否允许多文件上传
+         chunkSize,              // 分片大小，单位为字节
+         maxFileUploads,         // 最大文件上传数量
+         maxFileChunksUploads,   // 最大分片上传数量
+         compressionOptions      // compression插件的压缩图片参数
+      } = this.options.uploadOptions
 
-      const { isValid, invalidFiles } = validateFiles(Array.from(files), accept ?? '')
+
+      // isValid  是否通过文件类型校验, invalidFiles 验证的文件列表
+      const { isValid, invalidFiles } = validateFiles(Array.from(files), accept ?? '') 
+
 
       //多文件校验数量
       if (multiple && multipleNum && files.length > multipleNum) {
@@ -107,6 +121,16 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          throw Error('上传的文件类型不符合要求')
       }
 
+
+
+      //开启图片压缩
+      if (Reflect.has(this.options,'toggleCompressionImg') && this.options.toggleCompressionImg){
+         const compressionFiles = Array.from(files).map(async t => await compressionImg(compressionOptions as CompressionImgOptions, t))
+         files = (await Promise.allSettled(compressionFiles)).filter(t => t.status === 'fulfilled').map(t => t.value)
+         console.warn('压缩图片成功 ↓')
+         console.table(files)
+      }
+      // if(true) return
       //其他上传类型参数配置 
       Reflect.set(this.options.requestOptions, 'data', {
          ...this.options.requestOptions.data,
@@ -114,7 +138,8 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       })
 
       let httpRes = null
-      if (this.options.toggleLargefile) {  //开启大文件上传
+      //开启大文件上传
+      if (Reflect.has(this.options,'toggleLargefile') && this.options.toggleLargefile) {
          tools.initLargeUplod({
             files,
             chunkSize,
@@ -140,20 +165,33 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                   if (onProgress) {
                      onProgress({
                         ...data,
-                        file : getFileProto(file) as File,
+                        file : getFileProto(file) as Record<string,unknown>  ,
                         fileHash: key,   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
                      })
                   }
-               })
+               }) 
                return this.httpRequest({
 
                   ...this.options.requestOptions,
                   data: this.handlerFileParmas({
                      ...this.options.uploadOptions,
-                     files: (() => {
+                     files: file instanceof File ? (() => {
                         const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(file);
-                        return dataTransfer.files;
+                        return dataTransfer.files;  
+                     })() : (() => {
+                        const filterFile = Object.keys(file).reduce((acc, current) => {
+                           if((file[current] as unknown) instanceof File) {
+                              acc = file[current] 
+                           }
+                           return acc;
+                        }, {});
+                        if (Object.values(filterFile).length) {
+                           return [filterFile];
+                        } else {
+                           console.error('file传入的不是File类型,或者没有检测到有File属性');
+                           return [];
+                        }
                      })(),
                   })
                })

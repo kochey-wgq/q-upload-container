@@ -1,7 +1,6 @@
 
 import styles from './index.module.less';
-import tools from '@/common'
-
+import tools from '@/common' 
 import { UploadOutlined } from '@ant-design/icons';
 import { Button, Upload } from 'antd';
 import type { UploadFile } from 'antd'; 
@@ -20,6 +19,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const [files, setFiles] = useState<any>([]);
    const [isDragActive, setIsDragActive] = useState(false);
    const filesRef = useRef(files);
+   let timer:any = null
    useEffect(() => {
       filesRef.current = files;
    }, [files]);
@@ -29,15 +29,18 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
 
    const handleFileChange = (e: any) => {
       console.log(e, '选择文件回调')
-      // if (e.target.files.length > 0) {
-      //    addFiles(e.target.files);
+      if (e.target.files.length > 0) {
+         addFiles(e.target.files);
 
 
-      // }
-      // e.target.value = ''
-      if (e.fileList.length > 0) {
-         addFiles(e.fileList);
       }
+      e.target.value = '' 
+      // clearTimeout(timer)
+      // if (e.fileList.length > 0) {
+      //    timer = setTimeout(() => {
+      //       addFiles(e.fileList.map( t => t.originFileObj));
+      //    }, 0);
+      // }
    };
 
    const dragOver = (e: any) => {
@@ -89,13 +92,13 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          return item
       })
       setFiles(findFiles);
-   }
+   } 
+
    const startUpload = (currentFile?: File) => {
       if (files.length === 0) {
          alert('请先添加文件');
          return;
       }
-
       fileStartUpload({
          data: (() => {
             return currentFile ? [currentFile] : files.filter(t => t.status !== 'done')
@@ -253,6 +256,21 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       //    status: 'error',
       // },
    ];
+
+   const antProp = {
+      onRemove: (file) => {
+         const index = files.indexOf(file);
+         const newFileList = files.slice();
+         newFileList.splice(index, 1);
+         setFiles(newFileList);
+      },
+      beforeUpload: (file) => {
+
+         return Promise.reject(false)
+      },
+      fileList: files,
+      multiple : true,
+   }
    return (
       <div className={styles.uploadContainer}>
          <h2>文件上传</h2>
@@ -315,21 +333,27 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
             <button onClick={() => paused()} className={`${styles.btn} ${styles.secondary}`}>全部暂停</button>
             <button onClick={clearAll} className={`${styles.btn} ${styles.secondary}`}>清空列表</button>
          </div>
-         <br /><br /> 
+         <br /><br />
 
 
          <Upload
             action={requestOptions.baseURL + requestOptions.url}
             listType="picture"
             onChange={handleFileChange}
-            beforeUpload={() => Promise.reject(false)} // 禁止自动上传
-            defaultFileList={fileList}
+            {...antProp}
          >
             <Button type="primary" icon={<UploadOutlined />}>
                Upload
             </Button>
          </Upload>
-
+         <Button
+            type="primary"
+            onClick={() => startUpload()}
+            disabled={files.length === 0}
+            style={{ marginTop: 16 }}
+         >
+            Start Upload
+         </Button>
 
 
 
