@@ -52,7 +52,7 @@ interface Tools {
    chunkWorker: Worker,
    largeFile: LargeFileType | null,
    validateFiles: (files: File[], acceptRules: string | string[]) => ReturnValidateFiles,
-   getFileHash: (file: File | Record<string, unknown>) => Promise<string>,
+   getFileHash: (file: File | Record<string, any>) => Promise<string>,
    getFileProto: (file: File) => object,
    largeFileUpload: () => Promise<LargeFileItem[]>,
    initLargeUplod: (params: LargeFileUpload) => void,
@@ -574,7 +574,7 @@ const tools: Tools = {
     * @param {File} file - 要计算哈希值的文件
     * @returns {Promise<string>} - 返回一个 Promise，解析为文件的 SHA-256哈希值
     */
-   getFileHash: (file: File | Record<string, unknown>): Promise<string> => {
+   getFileHash: (file: File | Record<string, any>): Promise<string> => {
       return new Promise<string>((resolve, reject) => {
          try { // 如果传输过来的是File文件
             if (file instanceof File) {

@@ -9,7 +9,7 @@ declare global {
       result: (parmas: AxiosResponse<any, any>[]) => void
    }
    //CompressionImgOptions 插件
-   type CompressionImgOptions = {
+   type CompressionImgOptions = Partial<{
       maxSizeMB: number,            // (default: Number.POSITIVE_INFINITY)
       maxWidthOrHeight: number,     // compressedFile will scale down by ratio to a point that width or height is smaller than maxWidthOrHeight (default: undefined)
       // but, automatically reduce the size to smaller than the maximum Canvas size supported by each browser.
@@ -27,7 +27,7 @@ declare global {
       fileType: string,             // optional, fileType override e.g., 'image/jpeg', 'image/png' (default: file.type)
       initialQuality: number,       // optional, initial quality value between 0 and 1 (default: 1)
       alwaysKeepResolution: boolean // optional, only reduce quality, always keep width and height (default: false)
-   }
+   }>
    //http响应返回
    type responseType<T> = {
       code : number;

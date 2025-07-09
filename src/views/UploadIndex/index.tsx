@@ -29,18 +29,18 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
 
    const handleFileChange = (e: any) => {
       console.log(e, '选择文件回调')
-      if (e.target.files.length > 0) {
-         addFiles(e.target.files);
+      // if (e.target.files.length > 0) {
+      //    addFiles(e.target.files);
 
 
-      }
-      e.target.value = '' 
-      // clearTimeout(timer)
-      // if (e.fileList.length > 0) {
-      //    timer = setTimeout(() => {
-      //       addFiles(e.fileList.map( t => t.originFileObj));
-      //    }, 0);
       // }
+      // e.target.value = '' 
+      clearTimeout(timer)
+      if (e.fileList.length > 0) {
+         timer = setTimeout(() => {
+            addFiles(e.fileList.map( t => t.originFileObj));
+         }, 0);
+      }
    };
 
    const dragOver = (e: any) => {

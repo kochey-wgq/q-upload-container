@@ -2,7 +2,7 @@ import http from '@/api/request.ts'
 import tools from '@/common'
 import type { LargeFileUpload } from '@/common'
 type handlerFileType = {
-   files: FileList | [] | File[] | Array<object>,
+   files: FileList | File[] | [],
 } & UploadEventGatherOptions['uploadOptions']
 
 
@@ -165,7 +165,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                   if (onProgress) {
                      onProgress({
                         ...data,
-                        file : getFileProto(file) as Record<string,unknown>  ,
+                        file : getFileProto(file as File) as Record<string,unknown>  ,
                         fileHash: key,   //返回文件唯一标识（如用户是以列表形式渲染后主动上传）
                      })
                   }
@@ -180,14 +180,9 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                         dataTransfer.items.add(file);
                         return dataTransfer.files;  
                      })() : (() => {
-                        const filterFile = Object.keys(file).reduce((acc, current) => {
-                           if((file[current] as unknown) instanceof File) {
-                              acc = file[current] 
-                           }
-                           return acc;
-                        }, {});
-                        if (Object.values(filterFile).length) {
-                           return [filterFile];
+                        const filterFile = Object.values(file).filter((item) => item instanceof File) as File[];
+                        if (filterFile.length) {
+                           return filterFile;
                         } else {
                            console.error('file传入的不是File类型,或者没有检测到有File属性');
                            return [];
