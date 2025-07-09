@@ -180,7 +180,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
                         dataTransfer.items.add(file);
                         return dataTransfer.files;  
                      })() : (() => {
-                        const filterFile = Object.values(file).filter((item) => item instanceof File) as File[];
+                        const filterFile = Object.values(file).filter((item) => item instanceof File) 
                         if (filterFile.length) {
                            return filterFile;
                         } else {
