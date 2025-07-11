@@ -508,7 +508,7 @@ class LargeFile implements LargeFileType {
 /** @type {*} */
 const tools: Tools = {
    chunkWorker: new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url)),
-   largeFile: null,
+   largeFile: null,  // 存储大文件实例
    /**
     * 校验文件类型
     * @param {File[]} files - 文件列表
