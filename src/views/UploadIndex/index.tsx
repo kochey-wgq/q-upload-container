@@ -2,8 +2,7 @@
 import styles from './index.module.less';
 import tools from '@/common' 
 import { UploadOutlined } from '@ant-design/icons';
-import { Button, Upload } from 'antd';
-import type { UploadFile } from 'antd'; 
+import { Button, Upload } from 'antd'; 
 const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const { getFileHash } = tools
    const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,7 +37,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       clearTimeout(timer)
       if (e.fileList.length > 0) {
          timer = setTimeout(() => {
-            addFiles(e.fileList.map( t => t.originFileObj));
+            addFiles(e.fileList.map( (t:any) => t.originFileObj));
          }, 0);
       }
    };
@@ -87,7 +86,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    const paused = async (currentFile?: File) => {
       const res = await filePausedUpload(currentFile ? currentFile : filesRef.current)
       console.log(res, '暂停上传')
-      const findFiles = files.map(item => {
+      const findFiles = files.map((item:any) => {
          item.status = 'paused'
          return item
       })
@@ -101,7 +100,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       }
       fileStartUpload({
          data: (() => {
-            return currentFile ? [currentFile] : files.filter(t => t.status !== 'done')
+            return currentFile ? [currentFile] : files.filter((t:any) => t.status !== 'done')
          })(),
          onProgress: async (data: any) => {
             console.log(data, '上传进度')
@@ -235,36 +234,16 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
    }
 
 
-
-   const fileList: UploadFile[] = [
-      // {
-      //    uid: '0',
-      //    name: 'xxx.png',
-      //    status: 'uploading',
-      //    percent: 33,
-      // },
-      // {
-      //    uid: '-1',
-      //    name: 'yyy.png',
-      //    status: 'done',
-      //    url: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-      //    thumbUrl: 'https://zos.alipayobjects.com/rmsportal/jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png',
-      // },
-      // {
-      //    uid: '-2',
-      //    name: 'zzz.png',
-      //    status: 'error',
-      // },
-   ];
+ 
 
    const antProp = {
-      onRemove: (file) => {
+      onRemove: (file:any) => {
          const index = files.indexOf(file);
          const newFileList = files.slice();
          newFileList.splice(index, 1);
          setFiles(newFileList);
       },
-      beforeUpload: (file) => {
+      beforeUpload: ( ) => {
 
          return Promise.reject(false)
       },
@@ -287,8 +266,10 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                ref={fileInputRef}
                multiple={uploadOptions?.multiple || false}
                accept={Array.isArray(uploadOptions?.accept) ? uploadOptions?.accept?.join(',') : uploadOptions?.accept}
-               webkitdirectory={uploadOptions?.webkitdirectory}
-               directory={uploadOptions?.directory}
+               {...{
+                  webkitdirectory: uploadOptions?.webkitdirectory ? '' : undefined,
+                  directory: uploadOptions?.directory ? '' : undefined
+                } as any}
                onChange={handleFileChange}
                style={{ display: 'none' }}
             />
@@ -301,7 +282,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
             {files.length === 0 ? (
                <div className={styles.emptyMessage}>暂无文件</div>
             ) : (
-               files.map((file, index) => (
+               files.map((file:any, index:any) => (
                   <div key={index} className={styles.fileItem}>
                      <div className={styles.fileInfo}>
                         <span className={styles.fileName} title={file.name}>{file.name}</span>

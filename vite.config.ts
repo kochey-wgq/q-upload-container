@@ -9,7 +9,7 @@ export default defineConfig({
     dts({
       insertTypesEntry: true, // 生成类型入口
       exclude: ['**/__tests__/**'], // 排除测试文件
-      outDir: 'dist/types' // 类型输出目录
+      outDir: 'dist/types', // 类型输出目录 
     }),
     AutoImport({
       imports: [

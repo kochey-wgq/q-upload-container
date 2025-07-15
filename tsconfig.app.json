@@ -7,13 +7,16 @@
     "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-
+    "declaration": true,          // 关键配置
+    "declarationDir": "./dist/types",   // 声明文件输出目录
+    "emitDeclarationOnly": true,  // 仅生成声明
+    "rootDir": "./src",
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "moduleDetection": "force",
-    "noEmit": true,
+    "noEmit": false,
     "jsx": "react-jsx",
 
     /* Linting */
@@ -32,6 +35,7 @@
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",
-    "auto-imports.d.ts"
+    "auto-imports.d.ts",
+    "src"
   ]
 }
