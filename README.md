@@ -199,9 +199,12 @@ const MyUploadComponent = () => {
         accept: ['image/*', 'video/*'],
         multiple: true,
         multipleNum: 5,
-        chunkSize: 1024 * 1024 * 3 // 3MB
-      }}
-      toggleLargefile={true}
+        chunkSize: 1024 * 1024 * 3, // 3MB
+        compressionOptions: { // compression插件的压缩图片参数
+          maxSizeMB: 1, // 压缩图片最大大小 
+          useWebWorker: true, // 是否使用web worker进行压缩
+        }
+      }} 
       toggleCompressionImg={true}
     >
       {({ fileStartUpload, filePausedUpload, getResources }) => (
