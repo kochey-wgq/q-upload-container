@@ -21,8 +21,8 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
     npm run dev
  
 
-  3. **生产环境构建**：
-  
+  3. **生产环境打包**：
+
     npm run build
 
 
