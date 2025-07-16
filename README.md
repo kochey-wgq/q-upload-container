@@ -11,6 +11,25 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
 ## 服务端项目地址
 [该项目所配合的服务端地址](https://github.com/kochey-wgq/q-upload-server)
 
+## 快速启动
+  1. **安装依赖**：
+
+    ```bash
+    npm install
+    ```
+
+  2. **开发模式运行**：
+
+    ```bash
+    npm run dev
+    ```
+
+  3. **生产环境构建**：
+    ```bash
+    npm run build
+    ```
+
+
 ## 技术栈
 
 - **框架**: React 19.0.0 + TypeScript
