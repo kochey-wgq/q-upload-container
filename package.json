@@ -1,7 +1,7 @@
 {
   "name": "q-upload-container",
   "private": false,
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "dist/q-upload-container.umd.js",
   "module": "dist/q-upload-container.es.js",
   "types": "dist/types/components/UploadContainer/index.d.ts",
