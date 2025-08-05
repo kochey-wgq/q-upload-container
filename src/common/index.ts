@@ -49,7 +49,6 @@ type LargeFileItem = {
    uploadedBytes: number; // 已上传的字节数
 }
 interface Tools {
-   chunkWorker: Worker,
    largeFile: LargeFileType | null,
    validateFiles: (files: File[], acceptRules: string | string[]) => ReturnValidateFiles,
    getFileHash: (file: File | Record<string, any>) => Promise<string>,
@@ -57,7 +56,7 @@ interface Tools {
    largeFileUpload: () => Promise<LargeFileItem[]>,
    initLargeUplod: (params: LargeFileUpload) => void,
    pausedUpload: (target: LargeFileUpload['files'] | File) => Promise<LargeFileUpload['files'] | File>,
-   compressionImg:(options: CompressionImgOptions, file: File) => Promise<File>,
+   compressionImg: (options: CompressionImgOptions, file: File) => Promise<File>,
 }
 
 interface RequestConcurrencyType {
@@ -216,7 +215,10 @@ class LargeFile implements LargeFileType {
     */
    craeteChunk(file: File, uploadedChunks: never[], chunkSize: string | number): Promise<any[]> {
       return new Promise(resolve => {
-         const chunkWorker: Worker = new Worker(new URL('../workers/createFileChunks.js', import.meta.url),{ type: 'module' });  //创建文件切片的worker
+         const workerBlob = new Blob([
+            `importScripts('${new URL('../workers/createFileChunks.js', import.meta.url)}');`
+         ], { type: 'application/javascript' });
+         const chunkWorker: Worker = new Worker(URL.createObjectURL(workerBlob));  //创建文件切片的worker
          chunkWorker.postMessage({
             file,
             uploadedChunks,
@@ -507,7 +509,6 @@ class LargeFile implements LargeFileType {
  * @description 提供文件类型校验、文件哈希计算的工具
 /** @type {*} */
 const tools: Tools = {
-   chunkWorker: new Worker(new URL('../workers/createFileChunks.js', import.meta.url)),
    largeFile: null,  // 存储大文件实例
    /**
     * 校验文件类型
@@ -670,7 +671,7 @@ const tools: Tools = {
     * @returns file - 压缩后的图片
     */
    async compressionImg(options: CompressionImgOptions, file: File): Promise<File> {
- 
+
       try {
          const compressedFile = await imageCompression(file, options);
          console.log('compressedFile instanceof Blob', compressedFile instanceof Blob); // true
