@@ -216,7 +216,7 @@ class LargeFile implements LargeFileType {
     */
    craeteChunk(file: File, uploadedChunks: never[], chunkSize: string | number): Promise<any[]> {
       return new Promise(resolve => {
-         const chunkWorker: Worker = new Worker(new URL('@/workers/createFileChunks.js', import.meta.url),{ type: 'module' });  //创建文件切片的worker
+         const chunkWorker: Worker = new Worker(new URL('../workers/createFileChunks.js', import.meta.url),{ type: 'module' });  //创建文件切片的worker
          chunkWorker.postMessage({
             file,
             uploadedChunks,
@@ -507,7 +507,7 @@ class LargeFile implements LargeFileType {
  * @description 提供文件类型校验、文件哈希计算的工具
 /** @type {*} */
 const tools: Tools = {
-   chunkWorker: new Worker(new URL('@/workers/createFileChunks.js', import.meta.url)),
+   chunkWorker: new Worker(new URL('../workers/createFileChunks.js', import.meta.url)),
    largeFile: null,  // 存储大文件实例
    /**
     * 校验文件类型
