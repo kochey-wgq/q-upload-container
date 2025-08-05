@@ -216,7 +216,7 @@ class LargeFile implements LargeFileType {
     */
    craeteChunk(file: File, uploadedChunks: never[], chunkSize: string | number): Promise<any[]> {
       return new Promise(resolve => {
-         const chunkWorker: Worker = new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url),{ type: 'module' });  //创建文件切片的worker
+         const chunkWorker: Worker = new Worker(new URL('@/workers/createFileChunks.js', import.meta.url),{ type: 'module' });  //创建文件切片的worker
          chunkWorker.postMessage({
             file,
             uploadedChunks,

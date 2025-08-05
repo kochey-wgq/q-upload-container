@@ -8,8 +8,7 @@ export default defineConfig({
     react(),
     dts({
       tsconfigPath: 'tsconfig.app.json',
-      insertTypesEntry: true, // 生成类型入口
-      exclude: ['**/__tests__/**'], // 排除测试文件
+      insertTypesEntry: true, // 生成类型入口 
       outDir: 'dist/types', // 类型输出目录 
     }),
     AutoImport({
