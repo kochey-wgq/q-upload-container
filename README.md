@@ -8,9 +8,9 @@
 q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容器组件库。  该项目的核心理念是只提供文件上传的逻辑封装，不提供具体的UI组件，将UI的展示完全交给用户自定义实现。
 
 
-## 服务端项目地址
-[该项目所配合的服务端地址](https://github.com/kochey-wgq/q-upload-server)
-[该项目所配合的客户端地址](https://github.com/kochey-wgq/q-upload-container)
+## 项目地址
+[服务端地址](https://github.com/kochey-wgq/q-upload-server)
+[客户端地址](https://github.com/kochey-wgq/q-upload-container)
 ## 快速启动
   1. **安装依赖**：
  
