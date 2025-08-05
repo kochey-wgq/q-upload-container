@@ -507,7 +507,7 @@ class LargeFile implements LargeFileType {
  * @description 提供文件类型校验、文件哈希计算的工具
 /** @type {*} */
 const tools: Tools = {
-   chunkWorker: new Worker(new URL('@/workers/createFileChunks.ts', import.meta.url)),
+   chunkWorker: new Worker(new URL('@/workers/createFileChunks.js', import.meta.url)),
    largeFile: null,  // 存储大文件实例
    /**
     * 校验文件类型
