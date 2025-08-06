@@ -240,6 +240,7 @@ class LargeFile implements LargeFileType {
    async getUploadedChunks(fileHash: string): Promise<any> {
       const httpRes = await http({
          baseURL: this.baseURL,
+         data: JSON.stringify({ fileHash }),
          ...(() => {
             const defaultPar = {
                method: 'POST',
@@ -253,7 +254,6 @@ class LargeFile implements LargeFileType {
                ...this.largeUrl?.check, // 合并大文件的查询地址配置
             }
          })(),
-         data: JSON.stringify({ fileHash }),
       });
       return httpRes;
    }

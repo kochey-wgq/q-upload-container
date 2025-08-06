@@ -71,11 +71,57 @@ graph TB
 - `src/@types/global.d.ts` - 全局类型定义
 - `src/workers/createFileChunks.ts` - Web Worker文件切片处理
 
+
+## 使用示例
+
+```typescript
+import UploadContainer from 'q-upload-container';
+
+const MyUploadComponent = () => {
+  return (
+    <UploadContainer
+      requestOptions={{
+        baseURL: 'https://api.example.com',
+        url: '/upload',
+        method: 'post'
+      }}
+      uploadOptions={{
+        accept: ['image/*', 'video/*'],
+        multiple: true,
+        multipleNum: 5,
+        chunkSize: 1024 * 1024 * 3, // 3MB
+        compressionOptions: { // compression插件的压缩图片参数
+          maxSizeMB: 1, // 压缩图片最大大小 
+          useWebWorker: true, // 是否使用web worker进行压缩
+        }
+      }} 
+      toggleCompressionImg={true}
+    >
+      {({ fileStartUpload, filePausedUpload, getResources }) => (
+        <div>
+          <input
+            type="file"
+            onChange={(e) => fileStartUpload({
+              data: e,
+              onProgress: (progress) => console.log(progress),
+              result: (result) => console.log(result)
+            })}
+          />
+          <button onClick={() => filePausedUpload(file)}>
+            暂停上传
+          </button>
+        </div>
+      )}
+    </UploadContainer>
+  );
+};
+```
+
 ## 核心功能
 
 ### 1. 容器组件 (UploadContainer)  
 
-UploadContainer 是主要的容器组件，采用 render props 模式，通过 children 函数向用户提供上传相关的方法和配置。
+UploadContainer 是主要的容器组件，采用 renderProps 模式，通过 propsAttribute 向用户提供上传后相关的回调属性。
 
 ### 2. 核心逻辑类 (UploadEventGather) 
 
@@ -102,20 +148,121 @@ RequestConcurrency 提供请求并发控制功能，支持：
 - 暂停/恢复功能
 
 ## API 参数说明
+<style>
+  table {
+    width: 100%;
+  }
+  table, th, td {
+    text-align: left !important;
+  }
+</style>
+### UploadContainer 参数 
+<table>
+  <tr>
+    <th>参数名</th> 
+    <th>类型</th>
+    <th>默认值</th>
+    <th>说明</th>
+    <th>必传</th>
+  </tr>
+  <tr>
+    <td>toggleCompressionImg</td>
+    <td>Boolean</td>
+    <td>false</td>
+    <td>是否开启图片压缩</td>
+    <td>否</td>
+  </tr>
+  <tr>
+    <td>toggleLargefile</td>
+    <td>Boolean</td>
+    <td>false</td>
+    <td>是否开启大文件上传</td>
+    <td>否</td>
+  </tr>
+  <tr>
+    <td>requestOptions </td>
+    <td>Object</td>
+    <td>
+        <a href="#requestOptions">点击跳转</a>
+    </td>
+    <td>请求配置</td>
+    <td>是</td>
+  </tr>
+  <tr>
+    <td>uploadOptions</td>
+    <td>Object</td>
+    <td>
+        <a href="#uploadOptions">点击跳转</a>
+    </td>
+    <td>上传配置</td>
+    <td>是</td>
+  </tr>
+</table>
 
-### UploadEventGatherOptions 配置 
+注意：toggleCompressionImg（非大文件上传时）、toggleLargefile（不可与toggleCompressionImg叠加开启）。
 
-#### requestOptions (请求配置)
-- `largeUrl` - 大文件上传地址配置
-  - `upload` - 分片上传地址
-  - `check` - 分片查询地址  
-  - `merge` - 分片合并地址
-  - `second` - 秒传地址
-  - `timeout` - 超时时间
-- `onProgress` - 进度回调函数
-- 其他 AxiosRequestConfig 配置
 
-#### uploadOptions (上传配置)
+<h4 id="requestOptions">requestOptions (请求配置)</h4> 
+
+<table>
+  <tr>
+    <th>参数名</th> 
+    <th>类型</th>
+    <th>默认值</th>
+    <th>说明</th>
+    <th>必传</th>
+  </tr>
+  <tr>
+    <td>baseURL</td>
+    <td>String</td>
+    <td>用户定制</td>
+    <td>域名基础地址</td>
+    <td>是</td>
+  </tr>
+  <tr>
+    <td>method</td>
+    <td>String</td>
+    <td>用户定制</td>
+    <td>请求方式</td>
+    <td>是</td>
+  </tr>
+  <tr>
+    <td>url</td>
+    <td>String</td>
+    <td>用户定制</td>
+    <td>请求地址</td>
+    <td>是</td>
+  </tr>
+  <tr>
+    <td>largeUrl</td>
+    <td>Object</td>
+    <td>
+        <a href="#largeUrl">点击跳转</a>
+    </td>
+    <td>当toggleLargefile开启时所需要的相关地址信息</td>
+    <td>是</td>
+  </tr>
+</table>
+
+说明：相关AxiosRequestConfig Parmas
+
+
+<a id="largeUrl">大文件上传地址配置（以下配置与Axios参数相同）</a>
+- `largeUrl`
+
+    <a id="upload"></a>
+    - `upload` - 分片上传地址
+    <a id="check"></a>
+    - `check` - 分片查询地址  
+    <a id="merge"></a>
+    - `merge` - 分片合并地址
+    <a id="second"></a>
+    - `second` - 秒传地址
+    <a id="timeout"></a>
+    - `timeout` - 统一设置所有的相关地址的超时时间
+
+<h4 id="uploadOptions">uploadOptions (上传配置)</h4> 
+
 - `accept` - 允许的文件类型
 - `multipleNum` - 多文件上传数量限制
 - `multiple` - 是否允许多文件上传
@@ -126,14 +273,14 @@ RequestConcurrency 提供请求并发控制功能，支持：
 
 #### 功能开关
 - `toggleLargefile` - 是否启用大文件上传
-- `toggleCompressionImg` - 是否启用图片压缩
+- `toggleCompressionImg` - 是否启用图片压缩 (toggleLargefile 关闭情况下)
 
 ### 回调函数类型
 
 #### FileStartUploadPro 
 
 文件开始上传的参数类型：
-- `data` - 事件对象 (可以是input事件或FileList)
+- `data` - 事件对象 (可以是input事件或FileList[]源对象)
 - `onProgress` - 上传进度回调
 - `result` - 上传结果回调
 
@@ -201,50 +348,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
 - 错误处理
 - 业务状态码配置
 
-## 使用示例
 
-```typescript
-import UploadContainer from 'q-upload-container';
-
-const MyUploadComponent = () => {
-  return (
-    <UploadContainer
-      requestOptions={{
-        baseURL: 'https://api.example.com',
-        url: '/upload',
-        method: 'post'
-      }}
-      uploadOptions={{
-        accept: ['image/*', 'video/*'],
-        multiple: true,
-        multipleNum: 5,
-        chunkSize: 1024 * 1024 * 3, // 3MB
-        compressionOptions: { // compression插件的压缩图片参数
-          maxSizeMB: 1, // 压缩图片最大大小 
-          useWebWorker: true, // 是否使用web worker进行压缩
-        }
-      }} 
-      toggleCompressionImg={true}
-    >
-      {({ fileStartUpload, filePausedUpload, getResources }) => (
-        <div>
-          <input
-            type="file"
-            onChange={(e) => fileStartUpload({
-              data: e,
-              onProgress: (progress) => console.log(progress),
-              result: (result) => console.log(result)
-            })}
-          />
-          <button onClick={() => filePausedUpload(file)}>
-            暂停上传
-          </button>
-        </div>
-      )}
-    </UploadContainer>
-  );
-};
-```
 
 ## 构建配置
 

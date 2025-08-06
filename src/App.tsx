@@ -4,7 +4,7 @@ import UploadContainer from '@/components/UploadContainer'
 import UploadIndex from '@/views/UploadIndex'
 function App() {
   const uploadParmas = {  // 上传组件的参数
-    toggleCompressionImg : true,
+    toggleCompressionImg : true,  // 是否开启图片压缩
     // toggleLargefile : true, // 是否开启大文件上传
     uploadOptions: {    // 上传参数
       accept: ['image/*'],  // 接受的文件类型
