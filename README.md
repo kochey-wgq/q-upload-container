@@ -148,6 +148,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
 - 暂停/恢复功能
 
 ## API 参数说明
+### UploadContainer 参数 
 <style>
   table {
     width: 100%;
@@ -156,7 +157,6 @@ RequestConcurrency 提供请求并发控制功能，支持：
     text-align: left !important;
   }
 </style>
-### UploadContainer 参数 
 <table>
   <tr>
     <th>参数名</th> 
@@ -200,7 +200,14 @@ RequestConcurrency 提供请求并发控制功能，支持：
 </table>
 
 注意：toggleCompressionImg（非大文件上传时）、toggleLargefile（不可与toggleCompressionImg叠加开启）。
-
+<style>
+  table {
+    width: 100%;
+  }
+  table, th, td {
+    text-align: left !important;
+  }
+</style>
 
 <h4 id="requestOptions">requestOptions (请求配置)</h4> 
 
