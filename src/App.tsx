@@ -7,7 +7,7 @@ function App() {
     toggleCompressionImg : true,  // 是否开启图片压缩
     // toggleLargefile : true, // 是否开启大文件上传
     uploadOptions: {    // 上传参数
-      accept: 'image/jpeg,image/png,image/gif',  // 接受的文件类型
+      accept: ['image/png'],  // 接受的文件类型
       multipleNum: 2, // 多文件上传时，允许的最大文件数量
       multiple: true,   // 是否允许多文件上传
       chunkSize: 1024 * 100,      // 分片大小，单位为字节

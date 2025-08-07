@@ -319,6 +319,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          <Upload
             action={requestOptions.baseURL + requestOptions.url}
             listType="picture"
+            accept={Array.isArray(uploadOptions?.accept) ? uploadOptions?.accept?.join(',') : uploadOptions?.accept}
             onChange={handleFileChange}
             {...antProp}
          >
