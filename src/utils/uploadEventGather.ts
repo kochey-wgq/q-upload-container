@@ -28,7 +28,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       this.options = options;
    }
    httpRequest = async (config: AxiosConfig) => {
-      console.log('httpRequest', config)
+      // console.log('httpRequest', config)
 
       return await http(config)
 

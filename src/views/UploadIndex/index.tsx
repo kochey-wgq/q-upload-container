@@ -212,8 +212,7 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
       }
    }
 
-   const fileStatus = (status: string) => {
-      console.log(status, 'fileStatus')
+   const fileStatus = (status: string) => { 
       switch (status) {
          case 'uploading':
             return <div className={styles.status}

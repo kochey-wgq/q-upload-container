@@ -533,7 +533,9 @@ const tools: Tools = {
          const extension = (`.${file.name.split('.')[1]}`).toLowerCase()
          const mimeType = file.type.toLowerCase();
          let fileValid = false;
-
+         if(Object.prototype.toString.call(acceptRules) === '[object String]') {
+            acceptRules = (acceptRules as string).split(',').map(rule => rule.trim().toLowerCase());
+         } 
          for (const rule of acceptRules) {
             // 处理通配符情况
             if (rule.endsWith('/*')) {
