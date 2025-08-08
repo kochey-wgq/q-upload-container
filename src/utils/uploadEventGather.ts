@@ -134,7 +134,7 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
       //其他上传类型参数配置 
       Reflect.set(this.options.requestOptions, 'data', {
          ...this.options.requestOptions.data,
-         accept: typeof accept === 'string' ? accept.split(',') : accept
+         accept: typeof accept === 'string' ? accept.split(',') : accept ?? '*'
       })
 
       let httpRes = null
