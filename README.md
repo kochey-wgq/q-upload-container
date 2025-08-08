@@ -36,31 +36,6 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
   - browser-image-compression (图片压缩)
   - antd (辅助组件)
 
-## 项目架构
-
-```mermaid
-graph TB
-    A["UploadContainer (容器组件)"] --> B["UploadEventGather (核心逻辑类)"]
-    B --> C["tools (工具函数集合)"]
-    B --> D["http (HTTP请求封装)"]
-    C --> E["LargeFile (大文件上传类)"]
-    C --> F["RequestConcurrency (并发控制类)"]
-    E --> G["createFileChunks.ts (Web Worker)"]
-    
-    subgraph "核心模块"
-        H["文件类型校验"]
-        I["文件哈希计算"]
-        J["图片压缩"]
-        K["分片上传"]
-        L["进度回调"]
-    end
-    
-    B --> H
-    B --> I
-    B --> J
-    B --> K
-    B --> L
-```
 
 ### 核心文件结构
 
@@ -121,7 +96,7 @@ const MyUploadComponent = () => {
 
 ### 1. 容器组件 (UploadContainer)  
 
-UploadContainer 是主要的容器组件，采用 renderProps 模式，通过 propsAttribute 向用户提供上传后相关的回调属性。
+UploadContainer 是主要的容器组件，采用 renderProps 模式，通过 [propsAttribute](#propsAttribute) 向用户提供上传后相关的回调属性。
 
 ### 2. 核心逻辑类 (UploadEventGather) 
 
@@ -232,7 +207,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
     <td>
         <a href="#largeUrl">点击跳转</a>
     </td>
-    <td>当toggleLargefile开启时所需要的相关地址信息</td>
+    <td>当toggleLargefile开启时所需要的相关地址信息（不开启大文件分片时可不传）</td>
     <td>是</td>
   </tr>
 </table>
@@ -254,37 +229,225 @@ RequestConcurrency 提供请求并发控制功能，支持：
     <a id="timeout"></a>
     - `timeout` - 统一设置所有的相关地址的超时时间
 
-<h4 id="uploadOptions">uploadOptions (上传配置)</h4> 
+<h4 id="uploadOptions">uploadOptions (上传配置)</h4>  
 
-- `accept` - 允许的文件类型
-- `multipleNum` - 多文件上传数量限制
-- `multiple` - 是否允许多文件上传
-- `chunkSize` - 分片大小 (默认3MB)
-- `maxFileUploads` - 最大文件并发上传数量
-- `maxFileChunksUploads` - 最大分片并发上传数量
-- `compressionOptions` - 图片压缩参数
+<table style="text-align: left;">
+  <tr>
+    <th>参数名</th> 
+    <th>类型</th>
+    <th>默认值</th>
+    <th>说明</th>
+    <th>必传</th>
+  </tr>
+  <tr>
+    <td>accept</td>
+    <td>String | String[]</td>
+    <td>*</td>
+    <td>上传的文件类型（默认允许所有类型）</td>
+    <td>否</td>
+  </tr>
+  <tr>
+    <td>multipleNum</td>
+    <td>String | Number</td>
+    <td>-</td>
+    <td>multiple开启时，允许的最大文件数量</td>
+    <td>否</td>
+  </tr>
+  <tr>
+    <td>multiple</td>
+    <td>Boolean</td>
+    <td>false</td>
+    <td>是否开启多传</td>
+    <td>否</td>
+  </tr>
+  <tr>
+    <td>chunkSize</td>
+    <td>Number</td>
+    <td>3MB</td>
+    <td>分片大小，单位为字节</td>
+    <td>toggleLargefile开启时</td>
+  </tr>
+   <tr>
+    <td>maxFileUploads</td>
+    <td>Number</td>
+    <td>3</td>
+    <td>最大并发文件上传数量</td>
+    <td>toggleLargefile开启时</td>
+  </tr>
+  <tr>
+    <td>maxFileChunksUploads</td>
+    <td>Number</td>
+    <td>3</td>
+    <td>最大并发分片上传数量</td>
+    <td>toggleLargefile开启时</td>
+  </tr>
+  <tr>
+    <td>compressionOptions</td>
+    <td>Object</td>
+    <td>
+        <a href="https://www.npmjs.com/package/browser-image-compression" target="_blank">文档跳转</a>
+    </td>
+    <td>browser-image-compression插件的压缩图片参数</td>
+    <td>toggleCompressionImg开启时</td>
+  </tr>
+</table>
+
+ browser-image-compression所有属性参数
+```typescript
+const options: Options = { 
+  maxSizeMB: number,            // （默认值: Number.POSITIVE_INFINITY）允许的图片最大体积（单位：MB）
+  maxWidthOrHeight: number,     // 压缩后的图片会按比例缩放，直至宽度或高度小于此值（默认: undefined）
+                                // 注意：浏览器对 Canvas 的最大尺寸有限制，实际结果可能会自动调整到浏览器支持的范围。
+                                // 详见文档中的“注意事项”部分。
+  onProgress: Function,         // 可选，进度回调函数，参数为当前进度百分比（0 到 100）
+  useWebWorker: boolean,        // 可选，是否启用多线程 Web Worker，若不支持则退回主线程运行（默认: true）
+  libURL: string,               // 可选，用于在 Web Worker 中导入脚本的库地址（默认: CDN 链接）
+  preserveExif: boolean,        // 可选，是否保留 JPEG 的 Exif 元数据（如相机型号、焦距等，默认: false）
+  signal: AbortSignal,          // 可选，用于中断/取消压缩的 AbortSignal 对象
+
+  // 以下为高级选项
+  maxIteration: number,         // 可选，压缩的最大迭代次数（默认: 10）
+  exifOrientation: number,      // 可选，EXIF 方向信息，参考 https://stackoverflow.com/a/32490603/10395024
+  fileType: string,             // 可选，强制指定输出文件类型（如 'image/jpeg', 'image/png'，默认: 原始类型）
+  initialQuality: number,       // 可选，初始压缩质量（0 到 1，默认: 1）
+  alwaysKeepResolution: boolean // 可选，仅降低质量，始终不改变宽高（默认: false）
+}
+```
 
 #### 功能开关
 - `toggleLargefile` - 是否启用大文件上传
 - `toggleCompressionImg` - 是否启用图片压缩 (toggleLargefile 关闭情况下)
 
-### 回调函数类型
 
-#### FileStartUploadPro 
+<h3 id="propsAttribute">UploadContainer propsAttribute回调属性</h3>
 
-文件开始上传的参数类型：
-- `data` - 事件对象 (可以是input事件或FileList[]源对象)
-- `onProgress` - 上传进度回调
-- `result` - 上传结果回调
+```typescript
+<UploadContainer
+    {...传入相关参数配置}
+>
+{(propsAttribute) => (
+    用户展示组件
+    const {
+      fileStartUpload,
+      filePausedUpload,
+      getResources,
+      ...
+   } = propsAttribute
+)}
+
+</UploadContainer>
+```
+<table style="text-align: left;">
+    <tr>
+        <th>属性名</th> 
+        <th>类型</th> 
+        <th>说明</th> 
+    </tr>
+    <tr>
+        <td>fileStartUpload</td>
+        <td>
+            <a href="#fileStartUpload">prop callBack</a>
+        </td> 
+        <td>上传文件成功后返回的数据</td> 
+    </tr>
+    <tr>
+        <td>filePausedUpload</td>
+        <td>
+            <a href="#filePausedUpload">prop promise</a>
+        </td> 
+        <td>正在上传时可暂停文件的方法</td> 
+    </tr>
+    <tr>
+        <td>getResources</td>
+        <td>
+            <a>prop callBack</a>
+        </td> 
+        <td>
+            获取所有已上传的文件数据
+            <a href="https://github.com/kochey-wgq/q-upload-server">（需配合该项目的服务端）</a>
+        </td> 
+    </tr> 
+</table>
+
+ 
+<h4 id="fileStartUpload">fileStartUpload</h4>
+
+```typescript
+fileStartUpload({
+    data: files, // FileList源文件数据
+    onProgress: async (ProgressData: unknown) => {  //正在上传时
+        console.log(ProgressData, '正在上传数据')
+        const findFiles = files.map(async (item:File) => {
+            // 大文件上传
+            if (toggleLargefile) {  //是否开启大文件
+                const { fileInfo } = ProgressData
+                const { progress, status, file } = fileInfo
+                if (file.name === item.name) {
+
+                    item.progress = progress
+                    item.status = status
+                }
+            } else { // 小文件上传
+                const { status, percentage, file } = ProgressData
+                if (file.name === item.name) {
+                    item.progress = percentage
+                    item.status = status
+
+                }
+            }
+            return item
+        })
+        const newFiles = await Promise.all(findFiles)
+        setFiles(newFiles);
+
+    },
+    result: (data: any) => {
+        console.log(data, '上传完成后') 
+    }
+});
+```
 
 #### ProgressData 
 
-进度数据类型：
-- `file` - 当前上传的文件
+小文件非分片上传：
+- `axiosOrgProgress` -axios response 返回的数据
+- `file` - 当前上传的源文件
 - `fileHash` - 文件哈希值
 - `status` - 上传状态
 - `percentage` - 上传进度百分比
 - `progressType` - 进度类型 (upload/download)
+
+大文件分片上传：
+- `apiRes` -axios response 返回的数据
+- `fileInfo` - 当前上传的文件信息
+```typescript
+fileInfo : {
+    "file": { 
+        "progress": number,    //进度百分比
+        "status": string       //状态
+        ...
+    },
+    "progress": number,     //进度百分比
+    "status": string,       //状态
+    "uploadedBytes": 15487003,
+    "fileHash": string,     //文件哈希
+    "merged": boolean       //是否所有分片上传完成并合并完成         
+    ...
+}
+```
+
+<h4 id="filePausedUpload">filePausedUpload </h4>
+
+```typescript
+
+const res = await filePausedUpload(files)  //源文件参数
+res : [{    
+    "progress": number,    //进度百分比
+    "status": string       //状态
+    ...
+    ...
+}]
+```
 
 ## 核心方法
 
