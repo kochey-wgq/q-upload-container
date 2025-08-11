@@ -195,6 +195,13 @@ RequestConcurrency 提供请求并发控制功能，支持：
     <td>是</td>
   </tr>
   <tr>
+    <td>data</td>
+    <td>FormData</td>
+    <td>用户上传</td>
+    <td>上传文件与参数</td>
+    <td>是</td>
+  </tr>
+  <tr>
     <td>url</td>
     <td>String</td>
     <td>用户定制</td>
@@ -213,21 +220,108 @@ RequestConcurrency 提供请求并发控制功能，支持：
 </table>
 
 说明：相关AxiosRequestConfig Parmas
+```typescript
+    // 需返回如下response响应体
+    {
+        "code": number,         // 200 -success 状态码
+        "msg": string,          // 信息
+        "data": any             // 数据
+    }
+```
+<br/>
+<br/>
+
+<a id="largeUrl">非文件分片上传地址配置（不配置largeUrl即可）</a>
+- `files` - 源文件列表（FileList类型）
+- `accept` - 文件类型
 
 
-<a id="largeUrl">大文件上传地址配置（以下配置与Axios参数相同）</a>
+<br/>
+<br/>
+<br/>
+
+<a id="largeUrl">大文件分片上传地址配置（以下配置与Axios参数相同）</a>
+
+注意：开启大文件上传时的地址配置，request（如有需要配合该项目的服务端则需要一致）、response 数据返回结构必须保持一致
 - `largeUrl`
-
     <a id="upload"></a>
     - `upload` - 分片上传地址
+
+    ```typescript
+        // request（如有需要配合服务端则需要一致）
+        {
+            url: '/upload/largeChunk'       //用于配合该项目的服务端地址
+            method: 'POST',                 //上传方式
+            chunk：Blob                     //分片
+            chunkIndex ：number             //分片索引
+            fileHash ：  string             //分片哈希
+            fileName :string                //文件名
+            totalChunksSize ： number       //总分片大小            
+            fileType :  string              //文件类型
+            totalChunksNum ：number         //分片总块数
+        }
+
+        // response (返回的数据需要保持一致)
+        {
+            chunkSize: number,              // 每个分片大小(字节)
+            index:number,                   // 当前分片索引
+            totalChunksSize: number,        // 总分大小
+            uploadedBytes : number          // 已上传的字节数
+        }
+    ```
     <a id="check"></a>
     - `check` - 分片查询地址  
+    ```typescript
+        // request（如有需要配合该项目的服务端则需要一致）
+        {
+            url: '/upload/largeCheck'       // 用于配合该项目的服务端地址
+            method: 'GET',                  // 上传方式
+            fileHash: string,               // 文件哈希值
+        }
+
+        // response (返回的数据需要保持一致)
+        {
+            fileHash : string,              // 文件哈希值
+            uploadedChunks : number[],      // 索引数组集合 
+        }
+    ```
     <a id="merge"></a>
     - `merge` - 分片合并地址
+    ```typescript
+        // request（如有需要配合该项目的服务端则需要一致）
+        {
+            url: '/upload/largeMerge'       // 用于配合该项目的服务端地址
+            method: 'POST',                 // 上传方式
+            fileHash ： string,             // 文件哈希值
+            fileName ： string              // 文件名
+        }
+
+        // response (返回的数据需要保持一致)
+        {
+            originalname: string,           // 原始文件名
+            mimetype: string,               // 文件的 MIME 类型
+            suffixType: string,             // 扩展名
+            destination: string,            // 文件存放的目录
+            fileName: string,               // 文件名
+            path: number,                   // 文件的完整路径
+            size: string                    // 文件大小
+        }
+    ```
     <a id="second"></a>
     - `second` - 秒传地址
+    ```typescript
+        // request（如有需要配合该项目的服务端则需要一致）
+        {
+            url: '/upload/largeSecond'      // 用于配合该项目的服务端地址
+            method: 'GET',                  // 上传方式
+            fileHash ： string,             // 文件哈希值 
+        }
+
+        // response (-)                     //任意返回
+    ```
     <a id="timeout"></a>
-    - `timeout` - 统一设置所有的相关地址的超时时间
+    - `timeout` - 统一设置所有相关地址的超时时间
+
 
 <h4 id="uploadOptions">uploadOptions (上传配置)</h4>  
 
@@ -238,6 +332,20 @@ RequestConcurrency 提供请求并发控制功能，支持：
     <th>默认值</th>
     <th>说明</th>
     <th>必传</th>
+  </tr>
+  <tr>
+    <td>webkitdirectory</td>
+    <td>String | Boolean</td>
+    <td>false</td>
+    <td>是否支持webkit目录上传</td>
+    <td>否</td>
+  </tr>
+  <tr>
+    <td>directory</td>
+    <td>String | Boolean</td>
+    <td>false</td>
+    <td>是否支持目录上传（建议同开启webkitdirectory）</td>
+    <td>否</td>
   </tr>
   <tr>
     <td>accept</td>
@@ -407,7 +515,7 @@ fileStartUpload({
 });
 ```
 
-#### ProgressData 
+#### ProgressData 参数回调
 
 小文件非分片上传：
 - `axiosOrgProgress` -axios response 返回的数据
@@ -530,4 +638,4 @@ res : [{
 
 ## 联系作者
 
-<img src="./kochey.jpg" alt="微信号：KoChey0127" height="400" />
+<img src="./kochey.jpg" alt="微信号：KoChey0127" width="100" />

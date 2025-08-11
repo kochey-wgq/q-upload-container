@@ -266,8 +266,8 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
                multiple={uploadOptions?.multiple || false}
                accept={Array.isArray(uploadOptions?.accept) ? uploadOptions?.accept?.join(',') : uploadOptions?.accept}
                {...{
-                  webkitdirectory: uploadOptions?.webkitdirectory ? '' : undefined,
-                  directory: uploadOptions?.directory ? '' : undefined
+                  webkitdirectory: uploadOptions?.webkitdirectory,
+                  directory: uploadOptions?.directory
                 } as any}
                onChange={handleFileChange}
                style={{ display: 'none' }}
@@ -319,6 +319,10 @@ const UploadComponent: React.FC<any> = (props): React.ReactNode => {
          <Upload
             action={requestOptions.baseURL + requestOptions.url}
             listType="picture"
+            {...{
+               webkitdirectory: uploadOptions?.webkitdirectory,
+               directory: uploadOptions?.directory
+            } as any}
             accept={Array.isArray(uploadOptions?.accept) ? uploadOptions?.accept?.join(',') : uploadOptions?.accept}
             onChange={handleFileChange}
             {...antProp}

@@ -189,6 +189,8 @@ class LargeFile implements LargeFileType {
       formData.append('fileType', file.type);
       formData.append('totalChunksNum', totalChunksNum.toString());
       const httpRes = await http({
+         data: formData,
+         signal: this.controller[fileHash]?.signal,
          baseURL: this.baseURL,
          ...(() => {
             const defaultPar = {
@@ -200,8 +202,6 @@ class LargeFile implements LargeFileType {
                ...this.largeUrl?.upload, // 合并大文件的上传地址配置
             }
          })(),
-         data: formData,
-         signal: this.controller[fileHash]?.signal,
       });
       return httpRes;
    }
@@ -240,13 +240,10 @@ class LargeFile implements LargeFileType {
    async getUploadedChunks(fileHash: string): Promise<any> {
       const httpRes = await http({
          baseURL: this.baseURL,
-         data: JSON.stringify({ fileHash }),
+         params: { fileHash },
          ...(() => {
             const defaultPar = {
-               method: 'POST',
-               headers: {
-                  'Content-Type': 'application/json',
-               }
+               method: 'GET', 
             }
             return {
                timeout: this.largeUrl?.timeout,
@@ -265,6 +262,10 @@ class LargeFile implements LargeFileType {
    async mergeFileChunks(fileHash: string, fileName: string): Promise<any> {
       const httpRes = await http({
          baseURL: this.baseURL,
+         data: JSON.stringify({
+            fileHash,
+            fileName,
+         }),
          ...(() => {
             const defaultPar = {
                method: 'POST',
@@ -277,20 +278,17 @@ class LargeFile implements LargeFileType {
                ...defaultPar,
                ...this.largeUrl?.merge, // 合并大文件的合并地址配置
             }
-         })(),
-         data: JSON.stringify({
-            fileHash,
-            fileName,
-         }),
+         })()
       });
       return httpRes;
    }
-   /** 
+   /** 秒传
     * @param fileHash 文件哈希值
     * @returns {Promise<any>} - 秒传结果
     */
    async secondUpload(fileHash: string): Promise<any> {
       const httpRes = await http({
+         params: { fileHash },
          baseURL: this.baseURL,
          ...(() => {
             const defaultPar = {
@@ -302,7 +300,6 @@ class LargeFile implements LargeFileType {
                ...this.largeUrl?.second, // 合并大文件的秒传地址配置
             }
          })(),
-         params: { fileHash },
       });
       return httpRes;
    }
