@@ -250,7 +250,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
     {
         "code": number,         // 200 -success 状态码
         "msg": string,          // 信息
-        "data": any             // 数据
+        "data": any             // 相关地址的response都以data返回
     }
 ```
 <br/>
