@@ -36,6 +36,31 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
   - browser-image-compression (图片压缩)
   - antd (辅助组件)
 
+## 项目架构
+
+```mermaid
+graph TB
+    A["UploadContainer (容器组件)"] --> B["UploadEventGather (核心逻辑类)"]
+    B --> C["tools (工具函数集合)"]
+    B --> D["http (HTTP请求封装)"]
+    C --> E["LargeFile (大文件上传类)"]
+    C --> F["RequestConcurrency (并发控制类)"]
+    E --> G["createFileChunks.ts (Web Worker)"]
+    
+    subgraph "核心模块"
+        H["文件类型校验"]
+        I["文件哈希计算"]
+        J["图片压缩"]
+        K["分片上传"]
+        L["进度回调"]
+    end
+    
+    B --> H
+    B --> I
+    B --> J
+    B --> K
+    B --> L
+```
 
 ### 核心文件结构
 
