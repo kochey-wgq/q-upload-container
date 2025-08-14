@@ -1,6 +1,4 @@
 
-
-
 # q-upload-container 项目文档
 
 ## 项目概览
@@ -12,16 +10,16 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
 [服务端地址](https://github.com/kochey-wgq/q-upload-server)
 [客户端地址](https://github.com/kochey-wgq/q-upload-container)
 ## 快速启动
-  1. **安装依赖**：
- 
+1. **安装依赖**：
+
     npm install
 
-  2. **开发模式运行**：
+2. **开发模式运行**：
 
     npm run dev
- 
 
-  3. **生产环境打包**：
+
+3. **生产环境打包**：
 
     npm run build
 
@@ -31,36 +29,11 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
 - **框架**: React 19.0.0 + TypeScript
 - **构建工具**: Vite + Rollup
 - **核心依赖**: 
-  - axios (HTTP请求)
-  - crypto-js (文件哈希计算)
-  - browser-image-compression (图片压缩)
-  - antd (辅助组件)
+- axios (HTTP请求)
+- crypto-js (文件哈希计算)
+- browser-image-compression (图片压缩)
+- antd (辅助组件)
 
-## 项目架构
-
-```mermaid
-graph TB
-    A["UploadContainer (容器组件)"] --> B["UploadEventGather (核心逻辑类)"]
-    B --> C["tools (工具函数集合)"]
-    B --> D["http (HTTP请求封装)"]
-    C --> E["LargeFile (大文件上传类)"]
-    C --> F["RequestConcurrency (并发控制类)"]
-    E --> G["createFileChunks.ts (Web Worker)"]
-    
-    subgraph "核心模块"
-        H["文件类型校验"]
-        I["文件哈希计算"]
-        J["图片压缩"]
-        K["分片上传"]
-        L["进度回调"]
-    end
-    
-    B --> H
-    B --> I
-    B --> J
-    B --> K
-    B --> L
-```
 
 ### 核心文件结构
 
@@ -78,42 +51,42 @@ graph TB
 import UploadContainer from 'q-upload-container';
 
 const MyUploadComponent = () => {
-  return (
+return (
     <UploadContainer
-      requestOptions={{
+    requestOptions={{
         baseURL: 'https://api.example.com',
         url: '/upload',
         method: 'post'
-      }}
-      uploadOptions={{
+    }}
+    uploadOptions={{
         accept: ['image/*', 'video/*'],
         multiple: true,
         multipleNum: 5,
         chunkSize: 1024 * 1024 * 3, // 3MB
         compressionOptions: { // compression插件的压缩图片参数
-          maxSizeMB: 1, // 压缩图片最大大小 
-          useWebWorker: true, // 是否使用web worker进行压缩
+        maxSizeMB: 1, // 压缩图片最大大小 
+        useWebWorker: true, // 是否使用web worker进行压缩
         }
-      }} 
-      toggleCompressionImg={true}
+    }} 
+    toggleCompressionImg={true}
     >
-      {({ fileStartUpload, filePausedUpload, getResources }) => (
+    {({ fileStartUpload, filePausedUpload, getResources }) => (
         <div>
-          <input
+        <input
             type="file"
             onChange={(e) => fileStartUpload({
-              data: e,
-              onProgress: (progress) => console.log(progress),
-              result: (result) => console.log(result)
+            data: e,
+            onProgress: (progress) => console.log(progress),
+            result: (result) => console.log(result)
             })}
-          />
-          <button onClick={() => filePausedUpload(file)}>
+        />
+        <button onClick={() => filePausedUpload(file)}>
             暂停上传
-          </button>
+        </button>
         </div>
-      )}
+    )}
     </UploadContainer>
-  );
+);
 };
 ```
 
@@ -150,30 +123,30 @@ RequestConcurrency 提供请求并发控制功能，支持：
 ## API 参数说明
 
 ### UploadContainer 参数 
- 
+
 <table style="text-align: left;">
-  <tr>
+<tr>
     <th>参数名</th> 
     <th>类型</th>
     <th>默认值</th>
     <th>说明</th>
     <th>必传</th>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>toggleCompressionImg</td>
     <td>Boolean</td>
     <td>false</td>
     <td>是否开启图片压缩</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>toggleLargefile</td>
     <td>Boolean</td>
     <td>false</td>
     <td>是否开启大文件上传</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>requestOptions </td>
     <td>Object</td>
     <td>
@@ -181,8 +154,8 @@ RequestConcurrency 提供请求并发控制功能，支持：
     </td>
     <td>请求配置</td>
     <td>是</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>uploadOptions</td>
     <td>Object</td>
     <td>
@@ -190,7 +163,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
     </td>
     <td>上传配置</td>
     <td>是</td>
-  </tr>
+</tr>
 </table>
 
 注意：toggleCompressionImg（非大文件上传时）、toggleLargefile（不可与toggleCompressionImg叠加开启）。
@@ -198,42 +171,42 @@ RequestConcurrency 提供请求并发控制功能，支持：
 <h4 id="requestOptions">requestOptions (请求配置)</h4> 
 
 <table style="text-align: left;">
-  <tr>
+<tr>
     <th>参数名</th> 
     <th>类型</th>
     <th>默认值</th>
     <th>说明</th>
     <th>必传</th>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>baseURL</td>
     <td>String</td>
     <td>用户定制</td>
     <td>域名基础地址</td>
     <td>是</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>method</td>
     <td>String</td>
     <td>用户定制</td>
     <td>请求方式</td>
     <td>是</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>data</td>
     <td>FormData</td>
     <td>用户上传</td>
     <td>上传文件与参数</td>
     <td>是</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>url</td>
     <td>String</td>
     <td>用户定制</td>
     <td>请求地址</td>
     <td>是</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>largeUrl</td>
     <td>Object</td>
     <td>
@@ -241,7 +214,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
     </td>
     <td>当toggleLargefile开启时所需要的相关地址信息（不开启大文件分片时可不传）</td>
     <td>是</td>
-  </tr>
+</tr>
 </table>
 
 说明：相关AxiosRequestConfig Parmas
@@ -250,7 +223,7 @@ RequestConcurrency 提供请求并发控制功能，支持：
     {
         "code": number,         // 200 -success 状态码
         "msg": string,          // 信息
-        "data": any             // 相关地址的response都以data返回
+        "data": any             // 数据
     }
 ```
 <br/>
@@ -351,70 +324,84 @@ RequestConcurrency 提供请求并发控制功能，支持：
 <h4 id="uploadOptions">uploadOptions (上传配置)</h4>  
 
 <table style="text-align: left;">
-  <tr>
+<tr>
     <th>参数名</th> 
     <th>类型</th>
     <th>默认值</th>
     <th>说明</th>
     <th>必传</th>
-  </tr>
-  <tr>
+</tr>
+    <tr>
+    <td>toggleConcurrentFiles</td>
+    <td>Boolean</td>
+    <td>false</td>
+    <td>是否开启大文件并发上传</td>
+    <td>否</td>
+</tr>
+    <tr>
+    <td>toggleConcurrentFileChunks</td>
+    <td>Boolean</td>
+    <td>false</td>
+    <td>是否开启大文件分片并发上传</td>
+    <td>否</td>
+</tr>
+<tr>
     <td>webkitdirectory</td>
     <td>String | Boolean</td>
     <td>false</td>
     <td>是否支持webkit目录上传</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>directory</td>
     <td>String | Boolean</td>
     <td>false</td>
     <td>是否支持目录上传（建议同开启webkitdirectory）</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>accept</td>
     <td>String | String[]</td>
     <td>*</td>
     <td>上传的文件类型（默认允许所有类型）</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>multipleNum</td>
     <td>String | Number</td>
     <td>-</td>
     <td>multiple开启时，允许的最大文件数量</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>multiple</td>
     <td>Boolean</td>
     <td>false</td>
     <td>是否开启多传</td>
     <td>否</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>chunkSize</td>
     <td>Number</td>
     <td>3MB</td>
     <td>分片大小，单位为字节</td>
     <td>toggleLargefile开启时</td>
-  </tr>
-   <tr>
+</tr>
+<tr>
     <td>maxFileUploads</td>
     <td>Number</td>
     <td>3</td>
-    <td>最大并发文件上传数量</td>
+    <td>并发最大并发文件上传数量（toggleConcurrentFiles开启时）</td>
     <td>toggleLargefile开启时</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>maxFileChunksUploads</td>
     <td>Number</td>
     <td>3</td>
-    <td>最大并发分片上传数量</td>
+    <td>并发最大并发分片上传数量（toggleConcurrentFileChunks开启时）</td>
     <td>toggleLargefile开启时</td>
-  </tr>
-  <tr>
+</tr>
+<tr>
     <td>compressionOptions</td>
     <td>Object</td>
     <td>
@@ -422,28 +409,28 @@ RequestConcurrency 提供请求并发控制功能，支持：
     </td>
     <td>browser-image-compression插件的压缩图片参数</td>
     <td>toggleCompressionImg开启时</td>
-  </tr>
+</tr>
 </table>
 
- browser-image-compression所有属性参数
+browser-image-compression所有属性参数
 ```typescript
 const options: Options = { 
-  maxSizeMB: number,            // （默认值: Number.POSITIVE_INFINITY）允许的图片最大体积（单位：MB）
-  maxWidthOrHeight: number,     // 压缩后的图片会按比例缩放，直至宽度或高度小于此值（默认: undefined）
+maxSizeMB: number,            // （默认值: Number.POSITIVE_INFINITY）允许的图片最大体积（单位：MB）
+maxWidthOrHeight: number,     // 压缩后的图片会按比例缩放，直至宽度或高度小于此值（默认: undefined）
                                 // 注意：浏览器对 Canvas 的最大尺寸有限制，实际结果可能会自动调整到浏览器支持的范围。
                                 // 详见文档中的“注意事项”部分。
-  onProgress: Function,         // 可选，进度回调函数，参数为当前进度百分比（0 到 100）
-  useWebWorker: boolean,        // 可选，是否启用多线程 Web Worker，若不支持则退回主线程运行（默认: true）
-  libURL: string,               // 可选，用于在 Web Worker 中导入脚本的库地址（默认: CDN 链接）
-  preserveExif: boolean,        // 可选，是否保留 JPEG 的 Exif 元数据（如相机型号、焦距等，默认: false）
-  signal: AbortSignal,          // 可选，用于中断/取消压缩的 AbortSignal 对象
+onProgress: Function,         // 可选，进度回调函数，参数为当前进度百分比（0 到 100）
+useWebWorker: boolean,        // 可选，是否启用多线程 Web Worker，若不支持则退回主线程运行（默认: true）
+libURL: string,               // 可选，用于在 Web Worker 中导入脚本的库地址（默认: CDN 链接）
+preserveExif: boolean,        // 可选，是否保留 JPEG 的 Exif 元数据（如相机型号、焦距等，默认: false）
+signal: AbortSignal,          // 可选，用于中断/取消压缩的 AbortSignal 对象
 
-  // 以下为高级选项
-  maxIteration: number,         // 可选，压缩的最大迭代次数（默认: 10）
-  exifOrientation: number,      // 可选，EXIF 方向信息，参考 https://stackoverflow.com/a/32490603/10395024
-  fileType: string,             // 可选，强制指定输出文件类型（如 'image/jpeg', 'image/png'，默认: 原始类型）
-  initialQuality: number,       // 可选，初始压缩质量（0 到 1，默认: 1）
-  alwaysKeepResolution: boolean // 可选，仅降低质量，始终不改变宽高（默认: false）
+// 以下为高级选项
+maxIteration: number,         // 可选，压缩的最大迭代次数（默认: 10）
+exifOrientation: number,      // 可选，EXIF 方向信息，参考 https://stackoverflow.com/a/32490603/10395024
+fileType: string,             // 可选，强制指定输出文件类型（如 'image/jpeg', 'image/png'，默认: 原始类型）
+initialQuality: number,       // 可选，初始压缩质量（0 到 1，默认: 1）
+alwaysKeepResolution: boolean // 可选，仅降低质量，始终不改变宽高（默认: false）
 }
 ```
 
@@ -461,11 +448,11 @@ const options: Options = {
 {(propsAttribute) => (
     用户展示组件
     const {
-      fileStartUpload,
-      filePausedUpload,
-      getResources,
-      ...
-   } = propsAttribute
+    fileStartUpload,
+    filePausedUpload,
+    getResources,
+    ...
+} = propsAttribute
 )}
 
 </UploadContainer>
@@ -502,7 +489,7 @@ const options: Options = {
     </tr> 
 </table>
 
- 
+
 <h4 id="fileStartUpload">fileStartUpload</h4>
 
 ```typescript

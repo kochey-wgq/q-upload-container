@@ -101,7 +101,9 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
          chunkSize,              // 分片大小，单位为字节
          maxFileUploads,         // 最大文件上传数量
          maxFileChunksUploads,   // 最大分片上传数量
-         compressionOptions      // compression插件的压缩图片参数
+         compressionOptions,     // compression插件的压缩图片参数
+         toggleConcurrentFiles,  // 是否开启大文件并发上传
+         toggleConcurrentFileChunks  // 是否开启大文件分片上传
       } = this.options.uploadOptions
 
 
@@ -145,6 +147,8 @@ class UploadEventGather implements UploadEventGatherType<UploadEventGatherOption
             chunkSize,
             maxFileUploads,
             maxFileChunksUploads,
+            toggleConcurrentFiles,
+            toggleConcurrentFileChunks, 
             largeUrl: this.options.requestOptions.largeUrl,
             baseURL: this.options.requestOptions.baseURL as string,
             onProgress(resChunks) {

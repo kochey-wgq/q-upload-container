@@ -29,6 +29,8 @@ export type LargeFileUpload = {
    chunkSize?: number,  // 分片大小
    maxFileUploads?: number, // 限制文件并发上传的最大数量
    maxFileChunksUploads?: number, // 限制每个文件分片上传的最大数量
+   toggleConcurrentFiles?: boolean, // 是否开启大文件并发上传
+   toggleConcurrentFileChunks?: boolean, // 是否开启大文件分片并发上传
    largeUrl?: { // 大文件上传相关的URL
       timeout?: number, // 超时时间，默认不超时
       upload: AxiosRequestConfig, // 大文件分片上传地址
@@ -100,7 +102,7 @@ class RequestConcurrency implements RequestConcurrencyType {
       this.isPaused = false;  //暂停并发发出
    }
    add(fn: Promise<any>) {
-
+      console.log('触发并发');
       return new Promise((resolve, reject) => {
          if (this.isPaused) {
             return reject(new Error("Upload paused")); // 直接拒绝新任务
@@ -147,6 +149,8 @@ class LargeFile implements LargeFileType {
    readonly chunkSize: LargeFileUpload['chunkSize'] = 1024 * 1024 * 3; // 默认分片大小为3MB
    readonly maxFileUploads: LargeFileUpload['maxFileUploads'] = 3; // 默认文件最大并发上传数为3
    readonly maxFileChunksUploads: LargeFileUpload['maxFileChunksUploads'] = 3; // 限制每个文件分片上传的最大数量
+   readonly toggleConcurrentFiles: LargeFileUpload['toggleConcurrentFiles'] = true; // 是否开启文件并发上传
+   readonly toggleConcurrentFileChunks: LargeFileUpload['toggleConcurrentFileChunks'] = true; // 是否开启文件分片并发上传
    readonly files: LargeFileUpload['files'] = []; // 源文件列表，初始化为空数组
    readonly baseURL: LargeFileUpload['baseURL'] = ''; // 基础URL初始化为空字符串  
    onProgress: LargeFileUpload['onProgress']; // 上传chunk的进度回调函数
@@ -157,8 +161,10 @@ class LargeFile implements LargeFileType {
     * @param {LargeFileUpload} params - 大文件上传参数
     */
    constructor(params: LargeFileUpload) {
-      const { files, chunkSize, maxFileUploads, maxFileChunksUploads } = params;
+      const { files, chunkSize, maxFileUploads, maxFileChunksUploads,toggleConcurrentFiles,toggleConcurrentFileChunks } = params;
       this.files = files;
+      this.toggleConcurrentFiles = toggleConcurrentFiles ?? this.toggleConcurrentFiles; // 默认开启文件并发
+      this.toggleConcurrentFileChunks = toggleConcurrentFileChunks ?? this.toggleConcurrentFileChunks; // 默认开启文件分片并发
       this.chunkSize = chunkSize || this.chunkSize;
       this.maxFileUploads = maxFileUploads || this.maxFileUploads;
       this.maxFileChunksUploads = maxFileChunksUploads || this.maxFileChunksUploads;
@@ -347,7 +353,7 @@ class LargeFile implements LargeFileType {
 
       // 更新文件状态为上传中
       Reflect.set(fileInfo, 'status', 'uploading');
-      this.concurrentFileChunks.resume(); // 恢复分片上传的并发控制
+      if(this.toggleConcurrentFileChunks) this.concurrentFileChunks.resume(); // 恢复分片上传的并发控制
 
       // 查询一次已上传的分片
       const alreadyChunks = await this.getUploadedChunks(fileHash);
@@ -386,9 +392,13 @@ class LargeFile implements LargeFileType {
 
          try {
             // 并发分片上传
-            const apiRes = await this.concurrentFileChunks.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum)) as responseType<ResponseChunksJSON>
+            const apiRes = (this.toggleConcurrentFileChunks ? 
+               await this.concurrentFileChunks.add(this.uploadChunk(chunk, fileHash, file, totalChunksNum))
+               : 
+               await this.uploadChunk(chunk, fileHash, file, totalChunksNum)
+            ) as responseType<ResponseChunksJSON>
+            
             if (apiRes.code === 200) {
-
                // console.log(apiRes.data.index, '分片上传成功');
                console.log(fileInfo.status, '文件状态');
                fileInfo.uploadedBytes += apiRes.data.chunkSize; // 累加已上传字节  
@@ -440,7 +450,7 @@ class LargeFile implements LargeFileType {
       const editStatus = (fileHash: string, file: LargeFileUpload['files'] | File) => {
          this.controller[fileHash].abort();
          Reflect.set(file, 'status', 'paused');
-         this.concurrentFileChunks.pause(); // 暂停分片上传的并发控制
+         if(this.toggleConcurrentFileChunks) this.concurrentFileChunks.pause(); // 暂停分片上传的并发控制
       }
       //如果是单文件暂停
       if (target instanceof File) {
@@ -488,7 +498,12 @@ class LargeFile implements LargeFileType {
       }));
 
       // console.log('开始上传文件队列:', queue);
-      return Promise.all(queue.map(async (qu) => await this.concurrentFile.add(this.uploadFile(qu))));
+      return Promise.all(queue.map(async (qu) =>
+         this.toggleConcurrentFiles ?
+         await this.concurrentFile.add(this.uploadFile(qu))
+         :
+         await this.uploadFile(qu)
+      ));
    }
 }
 

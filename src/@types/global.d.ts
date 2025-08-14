@@ -51,6 +51,8 @@ declare global {
          onProgress?: (data: ProgressData) => void,
       } & AxiosRequestConfig,
       uploadOptions: {
+         toggleConcurrentFiles?: boolean, // 是否开启大文件并发上传
+         toggleConcurrentFileChunks?: boolean, // 是否开启大文件分片并发上传
          accept?: string[] | string,   // 文件类型限制
          multipleNum?: number,   //文件数量(多文件)
          multiple?: boolean,  // 是否支持多文件上传

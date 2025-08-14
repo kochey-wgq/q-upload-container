@@ -7,14 +7,16 @@ function App() {
     // toggleCompressionImg : true,  // 是否开启图片压缩
     toggleLargefile : true, // 是否开启大文件上传
     uploadOptions: {    // 上传参数
+      // toggleConcurrentFiles: true, //  是否开启大文件并发上传
+      // toggleConcurrentFileChunks: true, // 是否开启大文件分片并发上传
       // webkitdirectory: 'true', // 是否支持webkit目录上传
       // directory: 'true', // 是否支持目录上传
       accept: ['video/*'],  // 接受的文件类型
       multipleNum: 2, // 多文件上传时，允许的最大文件数量
       multiple: true,   // 是否允许多文件上传
       chunkSize: 1024 * 100,      // 分片大小，单位为字节
-      maxFileUploads: 3,  // 最大文件上传数量
-      maxFileChunksUploads: 3,  // 最大分片上传数量
+      maxFileUploads: 3,  // 并发最大文件上传数量
+      maxFileChunksUploads: 3,  // 并发最大分片上传数量
       compressionOptions: { // compression插件的压缩图片参数
         maxSizeMB: 1, // 压缩图片最大大小 
         useWebWorker: true, // 是否使用web worker进行压缩
