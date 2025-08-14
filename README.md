@@ -334,14 +334,14 @@ RequestConcurrency 提供请求并发控制功能，支持：
     <tr>
     <td>toggleConcurrentFiles</td>
     <td>Boolean</td>
-    <td>false</td>
+    <td>true</td>
     <td>是否开启大文件并发上传</td>
     <td>否</td>
 </tr>
     <tr>
     <td>toggleConcurrentFileChunks</td>
     <td>Boolean</td>
-    <td>false</td>
+    <td>true</td>
     <td>是否开启大文件分片并发上传</td>
     <td>否</td>
 </tr>
