@@ -9,6 +9,19 @@ q-upload-container 是一个基于 React + TypeScript 的文件上传逻辑容�
 ## 项目地址
 [服务端地址](https://github.com/kochey-wgq/q-upload-server)
 [客户端地址](https://github.com/kochey-wgq/q-upload-container)
+[npm地址](https://www.npmjs.com/package/q-upload-container)
+
+## 下载
+
+1. **npm**：
+
+    npm install q-upload-container
+
+2. **yarn**：
+
+    yarn add q-upload-container
+       
+
 ## 快速启动
 1. **安装依赖**：
 
